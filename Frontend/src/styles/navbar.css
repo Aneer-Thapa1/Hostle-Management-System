@@ -1,0 +1,38 @@
+.navbar {
+  background: #fff;
+  width: 75vw;
+  height: 60px;
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  border-radius: 20px;
+
+  .user-profile {
+    margin-right: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+
+    .user-txt {
+      p {
+        font-size: 16px;
+        font-weight: 600;
+        color: #000;
+      }
+
+      span {
+        font-size: 12px;
+        font-weight: 400;
+        color: #000;
+      }
+    }
+  }
+
+  img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+}
