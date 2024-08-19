@@ -1,6 +1,7 @@
 import React from "react";
 import { useTypewriter, Cursor } from "react-simple-typewriter";
 import searchIcon from "../assets/searchIcon.svg";
+import Navbar from "../components/Navbar";
 
 const Hero = () => {
   const [text] = useTypewriter({
@@ -12,7 +13,10 @@ const Hero = () => {
   });
 
   return (
-    <div className="bg-hero-bg flex w-screen h-screen bg-no-repeat bg-center bg-cover relative flex-col">
+    <div className="bg-hero-bg flex w-screen h-screen bg-no-repeat bg-center bg-cover  flex-col">
+      <div className="abslute top-0 left-0 z-20">
+        <Navbar />
+      </div>
       <div className="bg-black bg-opacity-50 w-screen h-screen absolute"></div>
 
       <div className="flex flex-col h-[65%] w-screen justify-end items-center z-20 gap-1">

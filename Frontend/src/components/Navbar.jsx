@@ -1,5 +1,6 @@
 import React from "react";
 import logo from "../assets/logo.svg";
+import { Link } from "react-router-dom";
 
 const Navbar = () => {
   const navList = ["Find a Hostel", "Rental Guides", "Share Stories"];
@@ -18,10 +19,10 @@ const Navbar = () => {
       </ul>
       <div className="flex gap-3">
         <button className="bg-primaryColor text-white px-6 py-3 font-semibold rounded-3xl cursor-pointer">
-          Become A Host
+          <Link to="/adminSignup"> Become A Host</Link>
         </button>
         <button className="border-2 border-primaryColor rounded-3xl px-6 text-white font-semibold cursor-pointer">
-          Login
+          <Link to="/login">Login</Link>
         </button>
       </div>
     </nav>
