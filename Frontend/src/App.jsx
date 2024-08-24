@@ -4,6 +4,7 @@ import * as ReactDOM from "react-dom";
 import { RouterProvider } from "react-router-dom";
 
 import Landing from "./pages/Landing";
+import UserSingleRoom from "./pages/UserSingleRoom";
 
 import "./App.css";
 
@@ -12,6 +13,7 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/userSingleRoom" element={<UserSingleRoom />} />
       </Routes>
     </BrowserRouter>
   );

@@ -9,6 +9,7 @@ export default {
       colors: {
         primaryColor: "#C39161",
         background: "#23262D",
+        boxColor: "#323f49",
       },
     },
   },
