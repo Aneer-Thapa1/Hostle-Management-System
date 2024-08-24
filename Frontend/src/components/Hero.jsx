@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTypewriter, Cursor } from "react-simple-typewriter";
 import searchIcon from "../assets/searchIcon.svg";
 import Navbar from "../components/Navbar";
