@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 const Navbar = () => {
   const navList = ["Find a Hostel", "Rental Guides", "Share Stories"];
   return (
-    <nav className="flex  justify-around gap-5 w-screen h-24 mt-7 items-center z-30">
+    <nav className="flex  justify-around gap-5 w-screen h-24 items-center z-30">
       <img src={logo} alt="Logo" />
       <ul className="flex gap-16 text-white ">
         {navList.map((item, index) => (
