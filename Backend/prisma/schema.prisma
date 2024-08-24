@@ -1,3 +1,5 @@
+// schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,12 +9,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model users {
+model User {
   id           String @id @default(auto()) @map("_id") @db.ObjectId
   userAddress  String
   userContact  String
-  userEmail    String
+  userEmail    String @unique
   userName     String
   userPassword String
-  userRole     String
+}
+
+model HostelOwner {
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  hostelName    String
+  ownerName     String
+  email         String @unique
+  contactNumber String
+  location      String
+  address       String
+  description   String
+  password      String
 }

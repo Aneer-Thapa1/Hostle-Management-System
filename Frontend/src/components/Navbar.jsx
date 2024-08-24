@@ -19,7 +19,7 @@ const Navbar = () => {
       </ul>
       <div className="flex gap-3">
         <button className="bg-primaryColor text-white px-6 py-3 font-semibold rounded-3xl cursor-pointer">
-          <Link to="/adminSignup"> Become A Host</Link>
+          <Link to="/hostSignup"> Become A Host</Link>
         </button>
         <button className="border-2 border-primaryColor rounded-3xl px-6 text-white font-semibold cursor-pointer">
           <Link to="/login">Login</Link>

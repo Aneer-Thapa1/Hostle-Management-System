@@ -7,12 +7,18 @@ import Landing from "./pages/Landing";
 import UserSingleRoom from "./pages/UserSingleRoom";
 
 import "./App.css";
+import Signup from "./pages/Signup";
+import Login from "./pages/Login";
+import HostSignup from "./pages/HostSignup";
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/hostSignup" element={<HostSignup />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/userSingleRoom" element={<UserSingleRoom />} />
       </Routes>
     </BrowserRouter>
