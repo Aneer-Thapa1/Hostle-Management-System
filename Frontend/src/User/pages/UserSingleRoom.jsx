@@ -2,43 +2,28 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { IoIosStarOutline } from "react-icons/io";
 import { IoMdStar } from "react-icons/io";
-import hostelImage from "../assets/aboutImage1.svg";
-
-function HostelInfo() {
-  return <div>Hostel Information Content</div>;
-}
-
-function PackageSummary() {
-  return <div>Package Summary Content</div>;
-}
-
-function FacilitiesActivities() {
-  return <div>Facilities & Activities Content</div>;
-}
-
-function Gallery() {
-  return <div>Gallery Content</div>;
-}
-
-function Meals() {
-  return <div>Meals Content</div>;
-}
+import hostelImage from "../../assets/aboutImage1.svg";
+import HostelInformation from "../components/HostelInformation";
+import PackeageSummary from "../components/PackeageSummary";
+import Facilities from "../components/Facilities";
+import Gallery from "../components/Gallery";
+import Meals from "../components/Meals";
 
 const UserSingleRoom = () => {
   const renderComponent = () => {
     switch (selectedOption) {
       case "Hostel Information":
-        return <HostelInfo />;
+        return <HostelInformation />;
       case "Package Summary":
-        return <PackageSummary />;
+        return <PackeageSummary />;
       case "Facilities & Activities":
-        return <FacilitiesActivities />;
+        return <Facilities />;
       case "Gallery":
         return <Gallery />;
       case "Meals":
         return <Meals />;
       default:
-        return <HostelInfo />;
+        return <HostelInformation />;
     }
   };
 
