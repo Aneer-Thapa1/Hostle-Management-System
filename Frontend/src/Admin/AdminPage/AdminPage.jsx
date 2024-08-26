@@ -21,9 +21,9 @@ const AdminPage = () => {
   };
 
   return (
-    <div className="w-full max-w-screen-2xl mx-auto flex gap-1">
-      <div className="w-[20%] bg-white flex flex-col gap-3 p-4">
-        <div className="w-full flex items-center my-2 mb-2">
+    <div className="w-full max-w-screen-2xl mx-auto flex gap-3">
+      <div className="w-[19%] bg-white flex flex-col gap-3 p-4">
+        <div className="w-full flex items-center my-2 mb-2 gap-2">
           <img className="w-14 h-14 object-cover" src={hms} alt="" />
           <h1 className="uppercase text-blue-500 font-semibold text-xl">
             novotel
