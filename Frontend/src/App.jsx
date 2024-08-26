@@ -5,11 +5,11 @@ import { RouterProvider } from "react-router-dom";
 
 import Landing from "./pages/Landing";
 import UserSingleRoom from "./pages/UserSingleRoom";
+import Signup from "./pages/Signup";
+import HostSignup from "./pages/HostSignup";
+import Login from "./pages/Login";
 
 import "./App.css";
-import Signup from "./pages/Signup";
-import Login from "./pages/Login";
-import HostSignup from "./pages/HostSignup";
 
 const App = () => {
   return (

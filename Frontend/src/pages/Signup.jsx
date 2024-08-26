@@ -28,7 +28,7 @@ export default function Signup() {
         <h2 className="text-2xl font-bold text-center text-white">Sign Up</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-gray-700">Name</label>
+            <label className="block text-white mb-2">Name</label>
             <input
               type="text"
               name="name"
@@ -40,7 +40,7 @@ export default function Signup() {
             />
           </div>
           <div>
-            <label className="block text-gray-700">Email Address</label>
+            <label className="block text-white mb-2">Email Address</label>
             <input
               type="email"
               name="email"
@@ -52,7 +52,7 @@ export default function Signup() {
             />
           </div>
           <div>
-            <label className="block text-gray-700">Password</label>
+            <label className="block text-white mb-2">Password</label>
             <input
               type="password"
               name="password"
@@ -64,7 +64,7 @@ export default function Signup() {
             />
           </div>
           <div>
-            <label className="block text-gray-700">Confirm Password</label>
+            <label className="block text-white mb-2">Confirm Password</label>
             <input
               type="password"
               name="confirmPassword"
