@@ -16,7 +16,6 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Add form validation and submission logic here
     console.log(formData);
   };
 
@@ -26,7 +25,7 @@ export default function Login() {
         <h2 className="text-2xl font-bold text-center text-white">Log In</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-gray-700">Email Address</label>
+            <label className="block text-white mb-2">Email Address</label>
             <input
               type="email"
               name="email"
@@ -38,7 +37,7 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="block text-gray-700">Password</label>
+            <label className="block text-white mb-2">Password</label>
             <input
               type="password"
               name="password"
@@ -56,7 +55,7 @@ export default function Login() {
             Log In
           </button>
         </form>
-        <p className="text-center text-white mt-4 ">
+        <p className="text-center text-white mt-4">
           Don't have an account?{" "}
           <a href="/signup" className="text-primaryColor ml-1 hover:underline">
             Sign Up
