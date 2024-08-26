@@ -10,6 +10,7 @@ import "./App.css";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import HostSignup from "./pages/HostSignup";
+import AdminPage from "./pages/ADMIN/AdminPage";
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
         <Route path="/hostSignup" element={<HostSignup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/userSingleRoom" element={<UserSingleRoom />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );
