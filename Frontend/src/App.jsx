@@ -10,7 +10,7 @@ import "./App.css";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import HostSignup from "./pages/HostSignup";
-import AdminPage from "./pages/ADMIN/AdminPage";
+import AdminPage from "./Admin/AdminPage/AdminPage";
 
 const App = () => {
   return (
