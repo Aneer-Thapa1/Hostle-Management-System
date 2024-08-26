@@ -1,8 +1,8 @@
-import arrowRightIcon from "../assets/arrowRight.svg";
-import image1 from "../assets/aboutImage1.svg";
-import image2 from "../assets/aboutImage2.svg";
-import image3 from "../assets/aboutImage3.svg";
-import image4 from "../assets/aboutImage4.svg";
+import arrowRightIcon from "../../assets/arrowRight.svg";
+import image1 from "../../assets/aboutImage1.svg";
+import image2 from "../../assets/aboutImage2.svg";
+import image3 from "../../assets/aboutImage3.svg";
+import image4 from "../../assets/aboutImage4.svg";
 
 const About = () => {
   return (
