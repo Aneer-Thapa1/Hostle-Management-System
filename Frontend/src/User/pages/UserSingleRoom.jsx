@@ -2,7 +2,7 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { IoIosStarOutline } from "react-icons/io";
 import { IoMdStar } from "react-icons/io";
-import hostelImage from "../assets/aboutImage1.svg";
+import hostelImage from "../../assets/aboutImage1.svg";
 import HostelInformation from "../components/HostelInformation";
 import PackeageSummary from "../components/PackeageSummary";
 import Facilities from "../components/Facilities";
