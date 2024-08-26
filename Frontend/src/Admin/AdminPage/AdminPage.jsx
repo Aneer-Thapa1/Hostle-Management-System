@@ -6,6 +6,12 @@ import { HiOutlineClipboardDocumentCheck } from "react-icons/hi2";
 import { IoBookmarkOutline } from "react-icons/io5";
 import { IoPricetagsOutline } from "react-icons/io5";
 import { GiTakeMyMoney } from "react-icons/gi";
+import AdminDashboard from "../AdminComponent/AdminDashboard";
+import AdminFrontDesk from "../AdminComponent/AdminFrontDesk";
+import AdminGuest from "../AdminComponent/AdminGuest";
+import AdminRoom from "../AdminComponent/AdminRoom";
+import AdminRate from "../AdminComponent/AdminRate";
+import AdminDeal from "../AdminComponent/AdminDeal";
 
 const AdminPage = () => {
   const [active, setActive] = useState("dashboard");
@@ -17,7 +23,7 @@ const AdminPage = () => {
   return (
     <div className="w-full max-w-screen-2xl mx-auto flex gap-1">
       <div className="w-[20%] bg-white flex flex-col gap-3 p-4">
-        <div className="w-full flex items-center">
+        <div className="w-full flex items-center my-2 mb-2">
           <img className="w-14 h-14 object-cover" src={hms} alt="" />
           <h1 className="uppercase text-blue-500 font-semibold text-xl">
             novotel
@@ -86,6 +92,24 @@ const AdminPage = () => {
             <h1>Rate</h1>
           </div>
         </div>
+      </div>
+
+      {/* RIGHT SECTION */}
+
+      <div className="w-[80%] py-10">
+        {active === "dashboard" ? (
+          <AdminDashboard />
+        ) : active === "fd" ? (
+          <AdminFrontDesk />
+        ) : active === "guest" ? (
+          <AdminGuest />
+        ) : active === "deal" ? (
+          <AdminDeal />
+        ) : active === "room" ? (
+          <AdminRoom />
+        ) : (
+          <AdminRate />
+        )}
       </div>
     </div>
   );
