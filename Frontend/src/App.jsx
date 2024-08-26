@@ -7,9 +7,13 @@ import Landing from "./pages/Landing";
 import UserSingleRoom from "./pages/UserSingleRoom";
 import Signup from "./pages/Signup";
 import HostSignup from "./pages/HostSignup";
+
 import Login from "./pages/Login";
 
 import "./App.css";
+
+import AdminPage from "./Admin/AdminPage/AdminPage";
+
 
 const App = () => {
   return (
@@ -20,6 +24,7 @@ const App = () => {
         <Route path="/hostSignup" element={<HostSignup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/userSingleRoom" element={<UserSingleRoom />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );
