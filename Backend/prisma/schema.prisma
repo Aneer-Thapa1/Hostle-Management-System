@@ -5,21 +5,23 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  id           Int    @id @default(autoincrement())
   userAddress  String
   userContact  String
   userEmail    String @unique
   userName     String
   userPassword String
+
+  @@map("users")
 }
 
 model HostelOwner {
-  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  id            Int    @id @default(autoincrement())
   hostelName    String
   ownerName     String
   email         String @unique
@@ -28,4 +30,6 @@ model HostelOwner {
   address       String
   description   String
   password      String
+
+  @@map("hostelOwners")
 }

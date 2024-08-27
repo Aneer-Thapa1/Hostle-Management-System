@@ -1,16 +1,15 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import * as ReactDOM from "react-dom";
-import { RouterProvider } from "react-router-dom";
 
-import Landing from "./pages/Landing";
-import UserSingleRoom from "./pages/UserSingleRoom";
+import Landing from "./User/pages/Landing";
+import Signup from "./User/pages/Signup";
+import Login from "./User/pages/Login";
 
 import "./App.css";
-import Signup from "./pages/Signup";
-import Login from "./pages/Login";
-import HostSignup from "./pages/HostSignup";
+
 import AdminPage from "./Admin/AdminPage/AdminPage";
+import HostSignup from "./Admin/AdminPage/HostSignup";
+import UserSingleRoom from "./User/pages/UserSingleRoom";
 
 const App = () => {
   return (
