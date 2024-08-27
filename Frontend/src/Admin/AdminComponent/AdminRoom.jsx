@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { CiMenuKebab } from "react-icons/ci";
 import AddHostel from "./ComponentModels/AddHostel";
+import { CiEdit } from "react-icons/ci";
+import { MdDeleteOutline } from "react-icons/md";
 
-const AdminRoom = ({ setModel }) => {
+const AdminRoom = ({ setModel, setEditData }) => {
   const [roomData, setRoomData] = useState([]);
   const [selectedOptions, setOption] = useState("allRoom");
-  // const [openModel, setModel] = useState(false);
+  const [openEdit, setEdit] = useState(false);
 
   useEffect(() => {
     const fetchRoomData = async () => {
@@ -24,12 +26,21 @@ const AdminRoom = ({ setModel }) => {
     }, 150);
   };
 
+  const showEditOptions = () => {
+    setEdit(true);
+  };
+
+  const EditRoomData = (room) => {
+    setEditData(room);
+    setModel(true);
+  };
+
   return (
     <div className={`w-full flex flex-col gap-3 relative `}>
       <h1 className="w-full text-[#636363] font-medium">Rooms</h1>
       {/* options */}
-      <div className="options w-full flex gap-3 my-3">
-        <div className="w-full flex gap-3">
+      <div className="options w-full flex gap-3 my-3 text-sm">
+        <div className="w-[70%] flex gap-3">
           <div
             onClick={() => setOption("allRoom")}
             className={`px-3 py-1 flex gap-1 ${
@@ -72,7 +83,7 @@ const AdminRoom = ({ setModel }) => {
         </div>
 
         {/* ADD ROOM BUTTON */}
-        <div onClick={openAddForm} className="w-full flex justify-end px-4">
+        <div onClick={openAddForm} className="w-[30%] flex justify-end px-4">
           <button className="bg-blue-500 text-white font-medium rounded-md px-3 py-1 active:scale-95 transition-all ease-in-out">
             Add Room
           </button>
@@ -107,7 +118,10 @@ const AdminRoom = ({ setModel }) => {
               ? roomData?.map((room, index) => {
                   return (
                     <>
-                      <tr key={index} className="border-[1px] border-blue-100 ">
+                      <tr
+                        key={index}
+                        className="border-[1px] border-blue-100 relative"
+                      >
                         <td className="p-5 font-medium w-[15%] ">
                           {room.roomId}
                         </td>
@@ -120,7 +134,7 @@ const AdminRoom = ({ setModel }) => {
                         <td className="p-5 font-medium w-[25%] text-[#636363]">
                           {room.amenities}
                         </td>
-                        <td className={`p-5 font-medium w-[20%] `}>
+                        <td className={`p-5 font-medium w-[20%]`}>
                           <span
                             className={`${
                               room.status === "Available"
@@ -133,8 +147,12 @@ const AdminRoom = ({ setModel }) => {
                             {room.status}
                           </span>
                         </td>
-                        <td className="p-5 font-medium w-[2%]">
-                          <CiMenuKebab />
+                        <td className="py-8 font-medium flex gap-4 items-center justify-center h-full">
+                          <CiEdit
+                            onClick={() => EditRoomData(room)}
+                            className="w-6 h-6 cursor-pointer"
+                          />
+                          <MdDeleteOutline className="w-6 h-6 cursor-pointer" />
                         </td>
                       </tr>
                     </>
@@ -175,8 +193,12 @@ const AdminRoom = ({ setModel }) => {
                               {room.status}
                             </span>
                           </td>
-                          <td className="p-5 font-medium w-[2%]">
-                            <CiMenuKebab />
+                          <td className="py-8 font-medium flex gap-4 items-center justify-center h-full">
+                            <CiEdit
+                              onClick={() => EditRoomData(room)}
+                              className="w-6 h-6 cursor-pointer"
+                            />
+                            <MdDeleteOutline className="w-6 h-6 cursor-pointer" />
                           </td>
                         </tr>
                       </>
@@ -216,8 +238,12 @@ const AdminRoom = ({ setModel }) => {
                               {room.status}
                             </span>
                           </td>
-                          <td className="p-5 font-medium w-[2%]">
-                            <CiMenuKebab />
+                          <td className="py-8 font-medium flex gap-4 items-center justify-center h-full">
+                            <CiEdit
+                              onClick={() => EditRoomData(room)}
+                              className="w-6 h-6 cursor-pointer"
+                            />
+                            <MdDeleteOutline className="w-6 h-6 cursor-pointer" />
                           </td>
                         </tr>
                       </>
