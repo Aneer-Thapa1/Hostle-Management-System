@@ -24,22 +24,8 @@ const AdminPage = () => {
     setModel(false);
   };
 
-  useEffect(() => {
-    // Add or remove the overflow-hidden class based on the openModel state
-    if (openModel) {
-      document.body.classList.add("overflow-hidden");
-    } else {
-      document.body.classList.remove("overflow-hidden");
-    }
-
-    // Clean up the class when the component unmounts or openModel changes
-    return () => {
-      document.body.classList.remove("overflow-hidden");
-    };
-  }, [openModel]);
-
   return (
-    <div className="w-full max-w-screen-2xl mx-auto flex gap-3">
+    <div className="w-full max-w-screen-2xl mx-auto flex gap-3 relative">
       {/* LEFT SECTION */}
       <div className="fixed top-0 left-0 w-[19%] h-screen bg-white flex flex-col gap-3 p-4 overflow-y-auto">
         <div className="w-full flex items-center my-2 mb-2 gap-2">
@@ -115,7 +101,7 @@ const AdminPage = () => {
 
       {/* RIGHT SECTION */}
 
-      <div className={`w-[80%] flex flex-col gap-3 ml-[19%] relative`}>
+      <div className={`w-[80%] flex flex-col gap-3 ml-[19%] `}>
         {/* This is DIV for the Serach and profile */}
         <div className="w-full flex items-center my-2 mb-6 gap-2">
           <img className="w-14 h-14 object-cover" src="" alt="" />
@@ -138,9 +124,7 @@ const AdminPage = () => {
         )}
 
         {/* ADD ROOM POPUP MODEL */}
-        {openModel && (
-          <AddHostel setModel={setModel} editData={editData} />
-        )}
+        {openModel && <AddHostel setModel={setModel} editData={editData} />}
       </div>
     </div>
   );
