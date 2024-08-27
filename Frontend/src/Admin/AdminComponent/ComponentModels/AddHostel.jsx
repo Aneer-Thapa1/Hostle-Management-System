@@ -10,7 +10,10 @@ const AddHostel = ({ setModel, editData }) => {
   });
 
   useEffect(() => {
-    setRoomData(editData);
+    if (editData === undefined) {
+    } else {
+      setRoomData(editData);
+    }
   }, [editData]);
 
   const addNewRoom = (e) => {
@@ -29,8 +32,8 @@ const AddHostel = ({ setModel, editData }) => {
   };
 
   return (
-    <div className="w-full absolute top-0 h-screen left-0 right-0 backdrop-blur-sm flex justify-center items-center overflow-y-scroll ">
-      <div className="w-full max-w-[500px] flex flex-col bg-white mx-auto py-5 px-10 border-[2px] rounded-md ">
+    <div className="w-full absolute top-0 bottom-0 left-0 right-0 backdrop-blur-sm flex justify-center items-center">
+      <div className="w-full max-w-[500px] flex flex-col bg-white mx-auto py-5 px-10 border-[2px] rounded-md max-h-[500px]">
         <div className="w-full flex justify-between items-center">
           <span className=" font-semibold text-xl mb-4 text-blue-500">
             {editData === "" ? "Add a new room" : "Edit room details"}
@@ -50,8 +53,8 @@ const AddHostel = ({ setModel, editData }) => {
             onChange={(e) => handleChange(e)}
             className="w-full py-2 outline-none border-[1px] rounded-md"
             name="type"
-            id="roomType"
-            value={roomData.type}
+            id="type"
+            value={roomData?.type}
           >
             <option value="Double Bed">Double Bed</option>
             <option value="Single Bed">Single Bed</option>
