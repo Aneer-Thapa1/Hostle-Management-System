@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { CiMenuKebab } from "react-icons/ci";
+import AddHostel from "./ComponentModels/AddHostel";
 
-const AdminRoom = () => {
+const AdminRoom = ({ setModel }) => {
   const [roomData, setRoomData] = useState([]);
   const [selectedOptions, setOption] = useState("allRoom");
+  // const [openModel, setModel] = useState(false);
 
   useEffect(() => {
     const fetchRoomData = async () => {
@@ -15,8 +17,15 @@ const AdminRoom = () => {
 
     fetchRoomData();
   }, []);
+
+  const openAddForm = () => {
+    setTimeout(() => {
+      setModel(true);
+    }, 150);
+  };
+
   return (
-    <div className="w-full flex flex-col gap-3">
+    <div className={`w-full flex flex-col gap-3 relative `}>
       <h1 className="w-full text-[#636363] font-medium">Rooms</h1>
       {/* options */}
       <div className="options w-full flex gap-3 my-3">
@@ -63,12 +72,14 @@ const AdminRoom = () => {
         </div>
 
         {/* ADD ROOM BUTTON */}
-        <div className="w-full flex justify-end px-4">
+        <div onClick={openAddForm} className="w-full flex justify-end px-4">
           <button className="bg-blue-500 text-white font-medium rounded-md px-3 py-1 active:scale-95 transition-all ease-in-out">
             Add Room
           </button>
         </div>
       </div>
+
+      {/* TABLE  */}
 
       <div className="w-full flex flex-col gap-3 justify-center items-center border-[1px] border-blue-100 rounded-md">
         <table className="w-full bg-blue-50">
