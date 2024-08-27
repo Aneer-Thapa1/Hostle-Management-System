@@ -55,7 +55,19 @@ const AdminRoom = () => {
                     <td className="p-5 font-medium w-[25%] text-[#636363]">
                       {room.amenities}
                     </td>
-                    <td className="p-5 font-medium w-[20%] ">{room.status}</td>
+                    <td className={`p-5 font-medium w-[20%] `}>
+                      <span
+                        className={`${
+                          room.status === "Available"
+                            ? "bg-blue-100 text-blue-500 px-3 py-1 rounded-xl"
+                            : room.status === "Reserved"
+                            ? "bg-green-100 text-green-500 rounded-xl px-4 py-1"
+                            : "bg-orange-100 text-orange-500 rounded-xl px-4 py-1"
+                        }`}
+                      >
+                        {room.status}
+                      </span>
+                    </td>
                     <td className="p-5 font-medium w-[2%]">
                       <CiMenuKebab />
                     </td>

@@ -12,7 +12,7 @@
       "type": "Single bed",
       "floor": "Floor - 2",
       "amenities": "AC, shower, Single bed, towel, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#003",
@@ -26,7 +26,7 @@
       "type": "Double bed",
       "floor": "Floor - 1",
       "amenities": "AC, shower, Double bed, towel, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#005",
@@ -40,7 +40,7 @@
       "type": "Suite",
       "floor": "Floor - 5",
       "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony, kitchen",
-      "status": "Under Maintenance"
+      "status": "Booked"
     },
     {
       "roomId": "#007",
@@ -54,7 +54,7 @@
       "type": "Single bed",
       "floor": "Floor - 3",
       "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#009",
@@ -75,7 +75,7 @@
       "type": "Single bed",
       "floor": "Floor - 2",
       "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#012",
@@ -89,7 +89,7 @@
       "type": "Double bed",
       "floor": "Floor - 4",
       "amenities": "AC, shower, Double bed, towels, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#014",
@@ -103,7 +103,7 @@
       "type": "Suite",
       "floor": "Floor - 5",
       "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony",
-      "status": "Under Maintenance"
+      "status": "Reserved"
     },
     {
       "roomId": "#016",
@@ -117,7 +117,7 @@
       "type": "Single bed",
       "floor": "Floor - 3",
       "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#018",
@@ -138,7 +138,7 @@
       "type": "Single bed",
       "floor": "Floor - 2",
       "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#021",
@@ -152,7 +152,7 @@
       "type": "Double bed",
       "floor": "Floor - 4",
       "amenities": "AC, shower, Double bed, towels, TV",
-      "status": "Occupied"
+      "status": "Reserved"
     },
     {
       "roomId": "#023",
@@ -166,7 +166,7 @@
       "type": "Suite",
       "floor": "Floor - 5",
       "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony",
-      "status": "Under Maintenance"
+      "status": "Reserved"
     },
     {
       "roomId": "#025",
@@ -180,7 +180,7 @@
       "type": "Single bed",
       "floor": "Floor - 3",
       "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#027",
@@ -201,7 +201,7 @@
       "type": "Single bed",
       "floor": "Floor - 2",
       "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#030",
@@ -215,7 +215,7 @@
       "type": "Double bed",
       "floor": "Floor - 4",
       "amenities": "AC, shower, Double bed, towels, TV",
-      "status": "Occupied"
+      "status": "Reserved"
     },
     {
       "roomId": "#032",
@@ -229,7 +229,7 @@
       "type": "Suite",
       "floor": "Floor - 5",
       "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony",
-      "status": "Under Maintenance"
+      "status": "Booked"
     },
     {
       "roomId": "#034",
@@ -243,7 +243,7 @@
       "type": "Single bed",
       "floor": "Floor - 3",
       "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#036",
@@ -264,7 +264,7 @@
       "type": "Single bed",
       "floor": "Floor - 2",
       "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Occupied"
+      "status": "Booked"
     },
     {
       "roomId": "#039",
