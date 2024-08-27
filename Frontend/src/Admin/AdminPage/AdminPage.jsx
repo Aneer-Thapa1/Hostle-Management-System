@@ -17,6 +17,7 @@ import AddHostel from "../AdminComponent/ComponentModels/AddHostel";
 const AdminPage = () => {
   const [active, setActive] = useState("dashboard");
   const [openModel, setModel] = useState(false);
+  const [editData, setEditData] = useState();
 
   const handleClick = (e, act) => {
     setActive(act);
@@ -131,13 +132,15 @@ const AdminPage = () => {
         ) : active === "deal" ? (
           <AdminDeal />
         ) : active === "room" ? (
-          <AdminRoom setModel={setModel} />
+          <AdminRoom setModel={setModel} setEditData={setEditData} />
         ) : (
           <AdminRate />
         )}
 
         {/* ADD ROOM POPUP MODEL */}
-        {openModel && <AddHostel setModel={setModel} />}
+        {openModel && (
+          <AddHostel setModel={setModel} editData={editData} />
+        )}
       </div>
     </div>
   );
