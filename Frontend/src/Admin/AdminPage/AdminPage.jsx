@@ -96,7 +96,14 @@ const AdminPage = () => {
 
       {/* RIGHT SECTION */}
 
-      <div className="w-[80%] py-10">
+      <div className="w-[80%] flex flex-col gap-3">
+        {/* This is DIV for the Serach and profile */}
+        <div className="w-full flex items-center my-2 mb-6 gap-2">
+          <img className="w-14 h-14 object-cover" src="" alt="" />
+          <h1 className="uppercase text-blue-500 font-semibold text-xl">
+            novotel
+          </h1>
+        </div>
         {active === "dashboard" ? (
           <AdminDashboard />
         ) : active === "fd" ? (
