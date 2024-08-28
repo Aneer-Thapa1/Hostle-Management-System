@@ -43,7 +43,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
         <div className="w-[70%] flex gap-3">
           <div
             onClick={() => setOption("allRoom")}
-            className={`px-3 py-1 flex gap-1 ${
+            className={`px-3 py-2 flex gap-1 ${
               selectedOptions === "allRoom"
                 ? "border-[1px] border-blue-500 bg-blue-100 text-blue-500"
                 : "border-[1px]  border-[#636363] text-[#636363]"
@@ -55,7 +55,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
 
           <div
             onClick={() => setOption("availableRoom")}
-            className={`px-3 py-1 flex gap-1 ${
+            className={`px-3 py-2 flex gap-1 ${
               selectedOptions === "availableRoom"
                 ? "border-[1px] border-blue-500 bg-blue-100 text-blue-500"
                 : "border-[1px]  border-[#636363] text-[#636363]"
@@ -69,7 +69,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
 
           <div
             onClick={() => setOption("BookedRoom")}
-            className={`px-3 py-1 flex gap-1 ${
+            className={`px-3 py-2 flex gap-1 ${
               selectedOptions === "BookedRoom"
                 ? "border-[1px] border-blue-500 bg-blue-100 text-blue-500"
                 : "border-[1px]  border-[#636363] text-[#636363]"
@@ -257,3 +257,6 @@ const AdminRoom = ({ setModel, setEditData }) => {
 };
 
 export default AdminRoom;
+
+
+//Random for commit
