@@ -6,19 +6,29 @@ import { CiEdit } from "react-icons/ci";
 import { MdDeleteOutline } from "react-icons/md";
 
 const AdminRoom = ({ setModel, setEditData }) => {
+  const [allData, setAllData] = useState([]);
   const [roomData, setRoomData] = useState([]);
   const [selectedOptions, setOption] = useState("allRoom");
   const [openEdit, setEdit] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const fetchRoomData = async () => {
       const response = await axios.get("http://localhost:3000/rooms");
       // console.table(response.data);
-      setRoomData(response.data);
+      const data = response.data;
+
+      // setRoomData(response.data);
+      setAllData(data);
+      setRoomData(data.splice(0, 5));
     };
 
     fetchRoomData();
   }, []);
+
+  // Pagination
+
+  useEffect(() => {}, [page]);
 
   const openAddForm = () => {
     setTimeout(() => {
@@ -257,6 +267,3 @@ const AdminRoom = ({ setModel, setEditData }) => {
 };
 
 export default AdminRoom;
-
-
-//Random for commit
