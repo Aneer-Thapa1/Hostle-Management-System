@@ -5,273 +5,78 @@
       "type": "Double bed",
       "floor": "Floor - 1",
       "amenities": "AC, shower, Double bed, towel, bathtub, TV",
-      "status": "Available"
+      "status": "Available",
+      "id": "b3eb"
     },
     {
       "roomId": "#002",
       "type": "Single bed",
       "floor": "Floor - 2",
       "amenities": "AC, shower, Single bed, towel, TV",
-      "status": "Booked"
+      "status": "Booked",
+      "id": "ff56"
     },
     {
       "roomId": "#003",
       "type": "Suite",
       "floor": "Floor - 3",
       "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony",
-      "status": "Available"
+      "status": "Available",
+      "id": "2617"
     },
     {
       "roomId": "#004",
       "type": "Double bed",
       "floor": "Floor - 1",
       "amenities": "AC, shower, Double bed, towel, TV",
-      "status": "Booked"
+      "status": "Booked",
+      "id": "f48e"
     },
     {
       "roomId": "#005",
       "type": "Single bed",
       "floor": "Floor - 4",
       "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Available"
+      "status": "Available",
+      "id": "f1de"
+    }
+  ],
+  "rate": [
+    {
+      "type": "Single",
+      "deals": "Family Deal",
+      "CancelPolicy": "Strict",
+      "DealPrice": 800,
+      "Rate": 800,
+      "Availability": "8",
+      "id": "f357"
     },
     {
-      "roomId": "#006",
-      "type": "Suite",
-      "floor": "Floor - 5",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony, kitchen",
-      "status": "Booked"
+      "type": "Double",
+      "deals": "Christmas",
+      "CancelPolicy": "Strict",
+      "DealPrice": 1200,
+      "Rate": 1200,
+      "Availability": "0",
+      "id": "4000"
     },
     {
-      "roomId": "#007",
-      "type": "Double bed",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, Double bed, towels, bathtub, TV",
-      "status": "Available"
+      "type": "Triple",
+      "deals": "Family Deal",
+      "CancelPolicy": "Flexible",
+      "DealPrice": 2000,
+      "Rate": 2000,
+      "Availability": "7",
+      "id": "96c7"
     },
     {
-      "roomId": "#008",
-      "type": "Single bed",
-      "floor": "Floor - 3",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#009",
-      "type": "Suite",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar",
-      "status": "Available"
-    },
-    {
-      "roomId": "#010",
-      "type": "Double bed",
-      "floor": "Floor - 1",
-      "amenities": "AC, shower, Double bed, towels, TV, sofa",
-      "status": "Available"
-    },
-    {
-      "roomId": "#011",
-      "type": "Single bed",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#012",
-      "type": "Suite",
-      "floor": "Floor - 3",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, kitchen, balcony",
-      "status": "Available"
-    },
-    {
-      "roomId": "#013",
-      "type": "Double bed",
-      "floor": "Floor - 4",
-      "amenities": "AC, shower, Double bed, towels, TV",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#014",
-      "type": "Single bed",
-      "floor": "Floor - 1",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Available"
-    },
-    {
-      "roomId": "#015",
-      "type": "Suite",
-      "floor": "Floor - 5",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony",
-      "status": "Reserved"
-    },
-    {
-      "roomId": "#016",
-      "type": "Double bed",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, Double bed, towels, bathtub, TV",
-      "status": "Available"
-    },
-    {
-      "roomId": "#017",
-      "type": "Single bed",
-      "floor": "Floor - 3",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#018",
-      "type": "Suite",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar",
-      "status": "Available"
-    },
-    {
-      "roomId": "#019",
-      "type": "Double bed",
-      "floor": "Floor - 1",
-      "amenities": "AC, shower, Double bed, towels, TV, sofa",
-      "status": "Available"
-    },
-    {
-      "roomId": "#020",
-      "type": "Single bed",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#021",
-      "type": "Suite",
-      "floor": "Floor - 3",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, kitchen, balcony",
-      "status": "Available"
-    },
-    {
-      "roomId": "#022",
-      "type": "Double bed",
-      "floor": "Floor - 4",
-      "amenities": "AC, shower, Double bed, towels, TV",
-      "status": "Reserved"
-    },
-    {
-      "roomId": "#023",
-      "type": "Single bed",
-      "floor": "Floor - 1",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Available"
-    },
-    {
-      "roomId": "#024",
-      "type": "Suite",
-      "floor": "Floor - 5",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony",
-      "status": "Reserved"
-    },
-    {
-      "roomId": "#025",
-      "type": "Double bed",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, Double bed, towels, bathtub, TV",
-      "status": "Available"
-    },
-    {
-      "roomId": "#026",
-      "type": "Single bed",
-      "floor": "Floor - 3",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#027",
-      "type": "Suite",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar",
-      "status": "Available"
-    },
-    {
-      "roomId": "#028",
-      "type": "Double bed",
-      "floor": "Floor - 1",
-      "amenities": "AC, shower, Double bed, towels, TV, sofa",
-      "status": "Available"
-    },
-    {
-      "roomId": "#029",
-      "type": "Single bed",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#030",
-      "type": "Suite",
-      "floor": "Floor - 3",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, kitchen, balcony",
-      "status": "Available"
-    },
-    {
-      "roomId": "#031",
-      "type": "Double bed",
-      "floor": "Floor - 4",
-      "amenities": "AC, shower, Double bed, towels, TV",
-      "status": "Reserved"
-    },
-    {
-      "roomId": "#032",
-      "type": "Single bed",
-      "floor": "Floor - 1",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Available"
-    },
-    {
-      "roomId": "#033",
-      "type": "Suite",
-      "floor": "Floor - 5",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#034",
-      "type": "Double bed",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, Double bed, towels, bathtub, TV",
-      "status": "Available"
-    },
-    {
-      "roomId": "#035",
-      "type": "Single bed",
-      "floor": "Floor - 3",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#036",
-      "type": "Suite",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar",
-      "status": "Available"
-    },
-    {
-      "roomId": "#037",
-      "type": "Double bed",
-      "floor": "Floor - 1",
-      "amenities": "AC, shower, Double bed, towels, TV, sofa",
-      "status": "Available"
-    },
-    {
-      "roomId": "#038",
-      "type": "Single bed",
-      "floor": "Floor - 2",
-      "amenities": "AC, shower, Single bed, towels, TV",
-      "status": "Booked"
-    },
-    {
-      "roomId": "#039",
-      "type": "Suite",
-      "floor": "Floor - 3",
-      "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, kitchen, balcony",
-      "status": "Available"
+      "type": "VIP",
+      "deals": "Black Friday",
+      "CancelPolicy": "Non-refundable",
+      "DealPrice": 4000,
+      "Rate": 4000,
+      "Availability": "11",
+      "id": "cf1b"
     }
   ]
 }
