@@ -32,7 +32,7 @@ const AddHostel = ({ setModel, editData }) => {
   };
 
   return (
-    <div className="w-full absolute top-0 bottom-0 left-0 right-0 backdrop-blur-sm flex justify-center items-center">
+    <div className="w-full absolute top-[15%] left-0 right-0 backdrop-blur-sm flex justify-center items-center">
       <div className="w-full max-w-[500px] flex flex-col bg-white mx-auto py-5 px-10 border-[2px] rounded-md max-h-[500px]">
         <div className="w-full flex justify-between items-center">
           <span className=" font-semibold text-xl mb-4 text-blue-500">
