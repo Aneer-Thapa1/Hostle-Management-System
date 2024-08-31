@@ -16,20 +16,17 @@ model User {
   userEmail    String @unique
   userName     String
   userPassword String
-
-  @@map("users")
 }
 
 model HostelOwner {
-  id            Int    @id @default(autoincrement())
-  hostelName    String
-  ownerName     String
-  email         String @unique
-  contactNumber String
-  location      String
-  address       String
-  description   String
-  password      String
-
-  @@map("hostelOwners")
+  id             Int    @id @default(autoincrement())
+  hostelName     String
+  hostelLocation String
+  ownerName      String
+  email          String @unique
+  contact        String
+  location       String
+  address        String
+  password       String
+  description    String
 }
