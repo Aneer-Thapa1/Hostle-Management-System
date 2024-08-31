@@ -114,7 +114,7 @@ const AdminRate = () => {
                   {rate.CancelPolicy}
                 </td>
                 <td className="p-5 font-medium w-[12%] text-[#636363]">
-                  $ {rate.DealPrice}
+                  $ {rate.Rate}
                 </td>
                 <td className="p-5 font-medium w-[10%]">$ {rate.Rate}</td>
                 <td className="p-5 font-medium w-[18%]">
@@ -146,7 +146,7 @@ const AdminRate = () => {
       {/* Modal to edit and add rate */}
       {openEdit && (
         <div className="w-full absolute top-0 left-0 right-0 bottom-0 backdrop-blur-sm flex justify-center items-center">
-          <div className="w-full max-w-[500px] flex flex-col bg-white mx-auto py-5 px-10 border-[2px] rounded-md max-h-[500px]">
+          <div className="w-full max-w-[500px] flex flex-col bg-white mx-auto py-5 px-10 border-[2px] rounded-md">
             <div className="w-full flex justify-between items-center">
               <span className="font-semibold text-xl mb-4 text-blue-500">
                 {editableData.id ? "Edit rate details" : "Add a new rate"}
