@@ -1,7 +1,6 @@
 {
   "rooms": [
     {
-      "roomId": "#001",
       "type": "Double bed",
       "floor": "Floor - 1",
       "amenities": "AC, shower, Double bed, towel, bathtub, TV",
@@ -9,7 +8,6 @@
       "id": "b3eb"
     },
     {
-      "roomId": "#002",
       "type": "Single bed",
       "floor": "Floor - 2",
       "amenities": "AC, shower, Single bed, towel, TV",
@@ -17,7 +15,6 @@
       "id": "ff56"
     },
     {
-      "roomId": "#003",
       "type": "Suite",
       "floor": "Floor - 3",
       "amenities": "AC, shower, King bed, towels, bathtub, TV, minibar, balcony",
@@ -25,7 +22,6 @@
       "id": "2617"
     },
     {
-      "roomId": "#004",
       "type": "Double bed",
       "floor": "Floor - 1",
       "amenities": "AC, shower, Double bed, towel, TV",
@@ -33,12 +29,29 @@
       "id": "f48e"
     },
     {
-      "roomId": "#005",
       "type": "Single bed",
       "floor": "Floor - 4",
       "amenities": "AC, shower, Single bed, towels, TV",
       "status": "Available",
       "id": "f1de"
+    },
+    {
+      "id": "a328",
+      "type": "Single Bed",
+      "floor": "Floor - 3",
+      "amenities": "osdbhv;jzndkmdgl;v",
+      "description": "No descriptions",
+      "capacity": "5",
+      "status": "Available"
+    },
+    {
+      "id": "1520",
+      "type": "Double Bed",
+      "floor": "Floor 1",
+      "amenities": "kei xaina",
+      "status": "Available",
+      "capacity": "6",
+      "description": "avsbfdngfh"
     }
   ],
   "rate": [
@@ -77,6 +90,68 @@
       "Rate": 4000,
       "Availability": "11",
       "id": "cf1b"
+    }
+  ],
+  "deal": [
+    {
+      "refNo": "D001",
+      "dealname": "Summer Escape",
+      "Tags": "summer, beach, family",
+      "Price": "$500",
+      "RoomFacility": "Air Conditioning, Free WiFi, Breakfast Included",
+      "RoomType": "Deluxe Suite",
+      "Discount": "20%",
+      "StartDate": "2024-06-01",
+      "EndDate": "2024-08-31",
+      "id": "b98d"
+    },
+    {
+      "refNo": "D002",
+      "dealname": "Winter Wonderland",
+      "Tags": "winter, snow, adventure",
+      "Price": "$650",
+      "RoomFacility": "Heating, Free WiFi, Ski Equipment Rental",
+      "RoomType": "Mountain View Room",
+      "Discount": "15%",
+      "StartDate": "2024-12-01",
+      "EndDate": "2025-02-28",
+      "id": "05ab"
+    },
+    {
+      "refNo": "D003",
+      "dealname": "Romantic Getaway",
+      "Tags": "romantic, honeymoon, couples",
+      "Price": "$800",
+      "RoomFacility": "Jacuzzi, Free WiFi, Candlelight Dinner",
+      "RoomType": "Ocean View Suite",
+      "Discount": "10%",
+      "StartDate": "2024-02-14",
+      "EndDate": "2024-02-20",
+      "id": "291e"
+    },
+    {
+      "refNo": "D004",
+      "dealname": "Business Traveler's Special",
+      "Tags": "business, corporate, executive",
+      "Price": "$450",
+      "RoomFacility": "Work Desk, Free WiFi, Breakfast Included",
+      "RoomType": "Executive Room",
+      "Discount": "25%",
+      "StartDate": "2024-09-01",
+      "EndDate": "2024-12-31",
+      "id": "3e67"
+    },
+    {
+      "refNo": "D005",
+      "dealname": "Family Fun Pack",
+      "Tags": "family, kids, theme park",
+      "Price": "$550",
+      "RoomFacility": "Two Queen Beds, Free WiFi, Kids Eat Free",
+      "RoomType": "Family Room",
+      "Discount": "30%",
+      "StartDate": "2024-07-01",
+      "EndDate": "2024-09-30",
+      "id": "df0f"
     }
   ]
 }
