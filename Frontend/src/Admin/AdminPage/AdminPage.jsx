@@ -25,7 +25,7 @@ const AdminPage = () => {
   };
 
   return (
-    <div className="w-full max-w-screen-2xl mx-auto flex gap-3 relative">
+    <div className="w-full max-w-screen-2xl mx-auto flex gap-3 relative h-screen">
       {/* LEFT SECTION */}
       <div className="fixed top-0 left-0 w-[19%] h-screen bg-white flex flex-col gap-3 p-4 overflow-y-auto">
         <div className="w-full flex items-center my-2 mb-2 gap-2">
@@ -101,7 +101,7 @@ const AdminPage = () => {
 
       {/* RIGHT SECTION */}
 
-      <div className={`w-[80%] flex flex-col gap-3 ml-[19%] `}>
+      <div className={`w-[80%] flex flex-col gap-3 ml-[19%]`}>
         {/* This is DIV for the Serach and profile */}
         <div className="w-full flex items-center my-2 mb-6 gap-2">
           <img className="w-14 h-14 object-cover" src="" alt="" />

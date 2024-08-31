@@ -22,6 +22,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
   }, []);
 
   const openAddForm = () => {
+    setEditData("");
     setTimeout(() => {
       setModel(true);
     }, 150);
@@ -123,9 +124,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
                         key={index}
                         className="border-[1px] border-blue-100 relative"
                       >
-                        <td className="p-5 font-medium w-[15%] ">
-                          {room.roomId}
-                        </td>
+                        <td className="p-5 font-medium w-[15%] ">#{room.id}</td>
                         <td className="p-5 font-medium w-[15%] text-[#636363]">
                           {room.type}
                         </td>
@@ -170,7 +169,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
                           className="border-[1px] border-blue-100 "
                         >
                           <td className="p-5 font-medium w-[15%] ">
-                            {room.roomId}
+                            #{room.id}
                           </td>
                           <td className="p-5 font-medium w-[15%] text-[#636363]">
                             {room.type}
@@ -215,7 +214,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
                           className="border-[1px] border-blue-100 "
                         >
                           <td className="p-5 font-medium w-[15%] ">
-                            {room.roomId}
+                            #{room.id}
                           </td>
                           <td className="p-5 font-medium w-[15%] text-[#636363]">
                             {room.type}
