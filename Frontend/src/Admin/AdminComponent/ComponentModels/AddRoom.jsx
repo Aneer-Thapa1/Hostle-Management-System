@@ -150,61 +150,75 @@ const AddRoom = ({ setModel, editData }) => {
   };
 
   return (
-    <div className="w-full absolute top-0 left-0 right-0 bottom-0 backdrop-blur-sm flex justify-center items-center">
-      <div className="w-full max-w-[500px] flex flex-col bg-white mx-auto py-5 px-10 border-[2px] rounded-md">
-        <div className="w-full flex justify-between items-center">
-          <span className="font-semibold text-xl mb-4 text-blue-500">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4">
+      <div className="bg-white rounded-lg w-full max-w-2xl">
+        <div className="flex justify-between items-center p-6 border-b">
+          <h2 className="text-xl font-semibold text-gray-800">
             {editData === "" ? "Add a new room" : "Edit room details"}
-          </span>
+          </h2>
           <RxCross2
             onClick={() => setModel(false)}
-            className="w-6 h-6 cursor-pointer"
+            className="w-6 h-6 cursor-pointer text-gray-600 hover:text-gray-800"
           />
         </div>
 
         {error && (
           <div
-            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+            className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"
             role="alert"
           >
-            <strong className="font-bold">Error!</strong>
-            <span className="block sm:inline"> {error}</span>
+            <p className="font-bold">Error</p>
+            <p>{error}</p>
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="w-full max-w-2xl mx-auto bg-white  rounded px-8 pt-6 pb-8 mb-4"
-        >
-          <div className="mb-6">
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="roomIdentifier"
-            >
-              Room Number/Name
-            </label>
-            <input
-              onChange={handleChange}
-              required
-              type="text"
-              value={roomData.roomIdentifier}
-              name="roomIdentifier"
-              placeholder="Enter unique room number or name"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            />
-          </div>
-
-          <div className="flex flex-wrap -mx-3 mb-6">
-            <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <label
-                className="block text-gray-700 text-sm font-bold mb-2"
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="roomIdentifier"
+              >
+                Room Number/Name
+              </label>
+              <input
+                onChange={handleChange}
+                required
+                type="text"
+                value={roomData.roomIdentifier}
+                name="roomIdentifier"
+                placeholder="Enter room number/name"
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="price"
+              >
+                Price
+              </label>
+              <input
+                onChange={handleChange}
+                required
+                type="number"
+                step="0.01"
+                value={roomData.price}
+                name="price"
+                placeholder="Enter room price"
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
                 htmlFor="type"
               >
                 Room Type
               </label>
               <select
                 onChange={handleChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 name="type"
                 id="type"
                 value={roomData.type}
@@ -214,16 +228,16 @@ const AddRoom = ({ setModel, editData }) => {
                 <option value="Suite">Suite</option>
               </select>
             </div>
-            <div className="w-full md:w-1/2 px-3">
+            <div>
               <label
-                className="block text-gray-700 text-sm font-bold mb-2"
+                className="block text-sm font-medium text-gray-700 mb-1"
                 htmlFor="floor"
               >
                 Floor
               </label>
               <select
                 onChange={handleChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 name="floor"
                 id="floor"
                 value={roomData.floor}
@@ -233,11 +247,47 @@ const AddRoom = ({ setModel, editData }) => {
                 <option value="Floor 3">Floor 3</option>
               </select>
             </div>
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="capacity"
+              >
+                Capacity
+              </label>
+              <input
+                onChange={handleChange}
+                required
+                type="number"
+                value={roomData.capacity}
+                name="capacity"
+                placeholder="Enter room capacity"
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="status"
+              >
+                Status
+              </label>
+              <select
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                name="status"
+                id="status"
+                value={roomData.status}
+              >
+                <option value="Available">Available</option>
+                <option value="Booked">Booked</option>
+                <option value="Reserved">Reserved</option>
+              </select>
+            </div>
           </div>
 
-          <div className="mb-6">
+          <div className="mt-4">
             <label
-              className="block text-gray-700 text-sm font-bold mb-2"
+              className="block text-sm font-medium text-gray-700 mb-1"
               htmlFor="amenities"
             >
               Amenities
@@ -253,16 +303,18 @@ const AddRoom = ({ setModel, editData }) => {
                       onChange={handleAmenitiesChange}
                       className="form-checkbox h-5 w-5 text-blue-600"
                     />
-                    <span className="ml-2 text-gray-700">{amenity}</span>
+                    <span className="ml-2 text-sm text-gray-700">
+                      {amenity}
+                    </span>
                   </label>
                 )
               )}
             </div>
           </div>
 
-          <div className="mb-6">
+          <div className="mt-4">
             <label
-              className="block text-gray-700 text-sm font-bold mb-2"
+              className="block text-sm font-medium text-gray-700 mb-1"
               htmlFor="description"
             >
               Description
@@ -273,71 +325,14 @@ const AddRoom = ({ setModel, editData }) => {
               value={roomData.description}
               name="description"
               placeholder="Enter description of room"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-32"
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32"
             />
           </div>
 
-          <div className="flex flex-wrap -mx-3 mb-6">
-            <div className="w-full md:w-1/3 px-3 mb-6 md:mb-0">
-              <label
-                className="block text-gray-700 text-sm font-bold mb-2"
-                htmlFor="capacity"
-              >
-                Capacity
-              </label>
-              <input
-                onChange={handleChange}
-                required
-                type="number"
-                value={roomData.capacity}
-                name="capacity"
-                placeholder="Enter room capacity"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              />
-            </div>
-            <div className="w-full md:w-1/3 px-3 mb-6 md:mb-0">
-              <label
-                className="block text-gray-700 text-sm font-bold mb-2"
-                htmlFor="price"
-              >
-                Price
-              </label>
-              <input
-                onChange={handleChange}
-                required
-                type="number"
-                step="0.01"
-                value={roomData.price}
-                name="price"
-                placeholder="Enter room price"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              />
-            </div>
-            <div className="w-full md:w-1/3 px-3">
-              <label
-                className="block text-gray-700 text-sm font-bold mb-2"
-                htmlFor="status"
-              >
-                Status
-              </label>
-              <select
-                onChange={handleChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                name="status"
-                id="status"
-                value={roomData.status}
-              >
-                <option value="Available">Available</option>
-                <option value="Booked">Booked</option>
-                <option value="Reserved">Reserved</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center">
+          <div className="mt-6">
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-110"
+              className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300"
               disabled={
                 addRoomMutation.isLoading || updateRoomMutation.isLoading
               }
