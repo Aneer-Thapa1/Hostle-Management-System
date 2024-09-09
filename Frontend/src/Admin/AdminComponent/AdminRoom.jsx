@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { CiMenuKebab } from "react-icons/ci";
-import AddHostel from "./ComponentModels/AddHostel";
+import AddHostel from "./ComponentModels/AddRoom";
 import { CiEdit } from "react-icons/ci";
 import { MdDeleteOutline } from "react-icons/md";
 

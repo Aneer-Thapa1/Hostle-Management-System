@@ -12,7 +12,7 @@ import AdminGuest from "../AdminComponent/AdminGuest";
 import AdminRoom from "../AdminComponent/AdminRoom";
 import AdminRate from "../AdminComponent/AdminRate";
 import AdminDeal from "../AdminComponent/AdminDeal";
-import AddHostel from "../AdminComponent/ComponentModels/AddHostel";
+import AddHostel from "../AdminComponent/ComponentModels/AddRoom";
 
 const AdminPage = () => {
   const [active, setActive] = useState("dashboard");
@@ -95,6 +95,16 @@ const AdminPage = () => {
             <GiTakeMyMoney className="w-6 h-6" />
 
             <h1>Rate</h1>
+          </div>
+          <div
+            onClick={(e) => handleClick(e, "amenities")}
+            className={`${
+              active === "rate" ? "bg-blue-200 text-blue-500 font-medium" : ""
+            } w-full flex gap-2 cursor-pointer hover:bg-blue-200 hover:text-blue-600 hover:font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group`}
+          >
+            <GiTakeMyMoney className="w-6 h-6" />
+
+            <h1>Amenities</h1>
           </div>
         </div>
       </div>

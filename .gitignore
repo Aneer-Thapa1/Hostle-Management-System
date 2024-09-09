@@ -15,7 +15,9 @@ dist-ssr
 
 ./Frontend/node_modules/
 ./Backend/node_modules/
-./Backend/.env/
+./Backend/.env
+./Frontend/.env
+
 
 # Editor directories and files
 .vscode/*

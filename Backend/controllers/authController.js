@@ -70,47 +70,58 @@ const signup = async (req, res) => {
 const login = async (req, res) => {
   const { email, password } = req.body;
 
+  // Validate input
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Email and password are required" });
+  }
+
   try {
     // Attempt to find the user by email in the 'user' model
     let user = await prisma.user.findUnique({
       where: { userEmail: email },
     });
 
-    let loginType = "user";
+    let role = "user";
 
     // If not found in 'user', attempt to find in 'hostelOwner'
     if (!user) {
       user = await prisma.hostelOwner.findUnique({
         where: { email: email },
       });
-      loginType = "hostelOwner";
+      role = "hostelOwner";
     }
 
     // If neither found, return an error
     if (!user) {
-      return res.status(400).json({ message: "Invalid email or password." });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
     // Compare the password
     const isMatch = await bcrypt.compare(
       password,
-      user.userPassword || user.password
+      role === "user" ? user.userPassword : user.password
     );
 
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password." });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
-    // Create a JWT payload based on login type
+    // Create a JWT payload
     const payload = {
       user: {
         id: user.id,
-        email: user.userEmail || user.email,
-        role: loginType,
+        email: role === "user" ? user.userEmail : user.email,
+        role: role,
       },
     };
 
-    // Sign the JWT and set it as a cookie
+    // Sign the JWT
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
@@ -118,18 +129,30 @@ const login = async (req, res) => {
     // Set the JWT as a cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
-      maxAge: 3600000,
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      sameSite: "strict", // Protect against CSRF
+      maxAge: 3600000, // 1 hour
     });
 
-    // Return successful login response with role
-    res.status(200).json({ message: "Login successful", role: loginType });
+    // Return successful login response
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token: token, // Include token in response body
+      user: {
+        id: user.id,
+        name: role === "user" ? user.userName : user.ownerName,
+        email: role === "user" ? user.userEmail : user.email,
+        role: role,
+      },
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Login error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "An error occurred during login" });
   }
 };
-
 const registerOwner = async (req, res) => {
   const {
     hostelName,

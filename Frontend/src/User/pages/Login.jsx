@@ -1,17 +1,52 @@
 import { useState } from "react";
+import { useMutation } from "react-query";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import {
+  FaEnvelope,
+  FaLock,
+  FaSpinner,
+  FaEye,
+  FaEyeSlash,
+} from "react-icons/fa";
+
+const loginUser = async (credentials) => {
+  const response = await axios.post(
+    "http://localhost:8870/api/auth/login",
+    credentials,
+    { withCredentials: true } // This is important for cookies to be set
+  );
+  return response.data;
+};
 
 export default function Login() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
+
+  const mutation = useMutation(loginUser, {
+    onSuccess: (data) => {
+      // Store the token in localStorage
+      localStorage.setItem("token", data.token);
+
+      // Redirect based on role
+      if (data.user.role === "hostelOwner") {
+        navigate("/admin");
+      } else {
+        navigate("/home");
+      }
+    },
+    onError: (error) => {
+      console.error(
+        "Login error:",
+        error.response?.data?.message || "An error occurred"
+      );
+    },
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,87 +56,91 @@ export default function Login() {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
+    mutation.mutate(formData);
+  };
 
-    setLoading(true); // Start loading
-
-    try {
-      const response = await axios.post(
-        "http://localhost:8870/api/auth/login",
-        formData
-      );
-
-      if (response.status === 200) {
-        navigate("/home");
-      }
-    } catch (error) {
-      setError("Something went wrong! ");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="w-full max-w-md bg-boxColor p-8 rounded-lg shadow-lg flex flex-col gap-2">
-        <h2 className="text-2xl font-bold text-center text-white">Log In</h2>
+    <div className="flex items-center justify-center min-h-screen bg-background bg-gradient-to-br from-background to-boxColor">
+      <div className="w-full max-w-md bg-boxColor p-8 rounded-lg shadow-2xl transform hover:scale-105 transition duration-300">
+        <h2 className="text-3xl font-bold text-center text-white mb-8">
+          Welcome Back
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-white mb-2">Email Address</label>
+          <div className="relative">
+            <FaEnvelope className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400" />
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-2 border bg-transparent text-white border-gray-600 outline-none rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryColor bg-inputBg text-inputText placeholder-inputPlaceholder"
+              className="w-full pl-10 pr-4 py-3 border bg-gray-700 text-white border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryColor transition duration-300"
               placeholder="Enter your email"
               required
             />
           </div>
-          <div>
-            <label className="block text-white mb-2">Password</label>
+          <div className="relative">
+            <FaLock className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-4 py-2 border text-white bg-transparent outline-none border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryColor bg-inputBg text-inputText placeholder-inputPlaceholder"
+              className="w-full pl-10 pr-12 py-3 border bg-gray-700 text-white border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryColor transition duration-300"
               placeholder="Enter your password"
               required
             />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-400 focus:outline-none"
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
-          {error && <p className="text-red-500 text-center">{error}</p>}
+          {mutation.isError && (
+            <p className="text-red-500 text-center bg-red-100 border border-red-400 rounded p-2">
+              {mutation.error.response?.data?.message ||
+                "An error occurred. Please try again."}
+            </p>
+          )}
           <button
             type="submit"
-            className="w-full py-3 bg-primaryColor text-white font-bold rounded-lg hover:bg-primaryHoverColor transition duration-300"
-            disabled={loading} // Disable button when loading
+            className="w-full py-3 bg-primaryColor text-white font-bold rounded-lg hover:bg-primaryHoverColor transition duration-300 flex items-center justify-center"
+            disabled={mutation.isLoading}
           >
-            {loading ? (
-              <div className="flex justify-center items-center">
-                <div className="loader"></div> {/* Add a loader animation */}
-                <span className="ml-2">Logging In...</span>
-              </div>
+            {mutation.isLoading ? (
+              <>
+                <FaSpinner className="animate-spin mr-2" />
+                Logging In...
+              </>
             ) : (
               "Log In"
             )}
           </button>
         </form>
-        <p className="text-center text-white mt-4">
-          Don't have an account?{" "}
-          <a href="/signup" className="text-primaryColor ml-1 hover:underline">
-            Sign Up
-          </a>
-        </p>
-        <p className="text-center text-gray-600 mt-2">
+        <div className="mt-6 text-center">
+          <p className="text-white">
+            Don't have an account?{" "}
+            <a
+              href="/signup"
+              className="text-primaryColor hover:underline transition duration-300"
+            >
+              Sign Up
+            </a>
+          </p>
           <a
             href="/forgot-password"
-            className="text-primaryColor hover:underline"
+            className="text-primaryColor hover:underline block mt-2 transition duration-300"
           >
             Forgot your password?
           </a>
-        </p>
+        </div>
       </div>
     </div>
   );

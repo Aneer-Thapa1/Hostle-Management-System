@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "react-query";
 
 import Landing from "./User/pages/Landing";
 import Signup from "./User/pages/Signup";
@@ -11,18 +12,22 @@ import AdminPage from "./Admin/AdminPage/AdminPage";
 import HostSignup from "./Admin/AdminPage/HostSignup";
 import UserSingleRoom from "./User/pages/UserSingleRoom";
 
+const queryClient = new QueryClient();
+
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/hostSignup" element={<HostSignup />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/userSingleRoom" element={<UserSingleRoom />} />
-        <Route path="/admin" element={<AdminPage />} />
-      </Routes>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/hostSignup" element={<HostSignup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/userSingleRoom" element={<UserSingleRoom />} />
+          <Route path="/admin" element={<AdminPage />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 };
 
