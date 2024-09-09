@@ -17,33 +17,36 @@ model User {
 }
 
 model HostelOwner {
-  id             Int          @id @default(autoincrement())
+  id             Int    @id @default(autoincrement())
   hostelName     String
   hostelLocation String
   ownerName      String
-  email          String       @unique
+  email          String @unique
   contact        String
   location       String
   address        String
   password       String
   description    String
-  hostelRooms    HostelRoom[] // This is the bridge entity
+  rooms          Room[]
 }
 
 model Room {
-  id            Int       @id @default(autoincrement())
-  roomNumber    String
-  type          String
-  price         Float
-  capacity      Int
-  description   String?
-  amenities     String? // Changed to String? because you can store JSON-like strings or comma-separated values
-  floor         Int?
-  roomCondition String?
-  dateAvailable DateTime?
+  id             Int       @id @default(autoincrement())
+  roomIdentifier String    @unique
+  type           String
+  floor          String
+  amenities      String // We'll store this as a JSON string
+  status         String    @default("Available")
+  capacity       Int
+  description    String
+  price          Float
+  roomCondition  String?
+  dateAvailable  DateTime?
 
-  photos      RoomPhoto[] // Relation to RoomPhoto
-  hostelRooms HostelRoom[] // This is the bridge entity
+  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  hostelOwnerId Int
+
+  photos RoomPhoto[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -57,14 +60,4 @@ model RoomPhoto {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model HostelRoom {
-  id            Int         @id @default(autoincrement())
-  hostelOwnerId Int
-  roomId        Int
-  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  room          Room        @relation(fields: [roomId], references: [id])
-
-  @@unique([hostelOwnerId, roomId])
 }

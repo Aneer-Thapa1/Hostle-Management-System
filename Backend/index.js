@@ -1,17 +1,22 @@
 const express = require("express");
-const router = express.Router();
 const bodyParser = require("body-parser");
 const cors = require("cors");
 
-const authRoutes = require("./routes/authRoute");
+const setupRoutes = require("./routes/routes.js");
 
 const app = express();
-app.use(cors());
+
+const corsOptions = {
+  origin: "http://localhost:5173",
+  optionsSuccessStatus: 200,
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 app.use(bodyParser.json());
 
-// Mount routes
-app.use("/api/auth", authRoutes);
+setupRoutes(app);
 
 // Response of server
 const port = 8870;

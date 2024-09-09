@@ -2,29 +2,31 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const addRoom = async (req, res) => {
+  console.log("Received room data:", req.body);
+
   const {
-    roomNumber,
+    roomIdentifier,
     type,
-    price,
+    floor,
+    amenities,
+    status,
     capacity,
     description,
-    amenities,
-    floor,
-    roomCondition,
-    dateAvailable,
-    hostelOwnerId,
-    photos,
+    price,
   } = req.body;
 
   // Validate required fields
-  if (!roomNumber || !type || !price || !capacity || !hostelOwnerId) {
+  if (!roomIdentifier || !type || !floor || !capacity || !description) {
     return res.status(400).json({
       error:
-        "Room number, type, price, capacity, and hostel owner ID are required",
+        "Room identifier, type, floor, capacity, description, and price are required",
     });
   }
 
   try {
+    // Get the hostelOwnerId from the authenticated user
+    const hostelOwnerId = req.user.id;
+
     // Ensure the HostelOwner exists
     const existingHostelOwner = await prisma.hostelOwner.findUnique({
       where: { id: hostelOwnerId },
@@ -35,31 +37,21 @@ const addRoom = async (req, res) => {
     }
 
     // Create the new room
-    const newRoom = await prisma.rooms.create({
+    const newRoom = await prisma.room.create({
       data: {
-        roomNumber,
+        roomIdentifier,
         type,
-        price,
-        capacity,
-        description,
-        amenities,
         floor,
-        roomCondition,
-        dateAvailable,
-        hostelOwnerId,
-        photos: {
-          create: photos.map((url) => ({ url })),
-        },
+        amenities: JSON.stringify(amenities), // Store amenities as a JSON string
+        status: status || "Available",
+        capacity: parseInt(capacity, 10),
+        description,
+        price: parseFloat(price),
+        hostelOwner: { connect: { id: hostelOwnerId } },
       },
     });
 
-    // Create an entry in the bridge table for the relationship
-    await prisma.hostelRoom.create({
-      data: {
-        hostelOwnerId,
-        roomId: newRoom.id,
-      },
-    });
+    console.log("New room created:", newRoom);
 
     res.status(201).json({
       message: "Room added successfully",
@@ -67,7 +59,18 @@ const addRoom = async (req, res) => {
     });
   } catch (error) {
     console.error("Add room error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    if (
+      error.code === "P2002" &&
+      error.meta?.target?.includes("roomIdentifier")
+    ) {
+      res
+        .status(400)
+        .json({ error: "A room with this identifier already exists" });
+    } else {
+      res
+        .status(500)
+        .json({ error: "Internal server error", details: error.message });
+    }
   }
 };
 
