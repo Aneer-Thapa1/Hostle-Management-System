@@ -74,40 +74,74 @@ const addRoom = async (req, res) => {
   }
 };
 
-const getRoom = async (req, res) => {
+const getRooms = async (req, res) => {
   const { roomId } = req.params;
-
-  // Validate the required parameter
-  if (!roomId) {
-    return res.status(400).json({ error: "Room ID is required" });
-  }
+  const {
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = req.query;
 
   try {
-    // Fetch the room details along with related photos and hostel owner details
-    const room = await prisma.rooms.findUnique({
-      where: { id: parseInt(roomId) },
-      include: {
-        photos: true,
-        hostelOwner: true,
-      },
-    });
+    if (roomId) {
+      // Fetch a single room if roomId is provided
+      const room = await prisma.Room.findUnique({
+        where: { id: parseInt(roomId) },
+        include: {
+          photos: true,
+          hostelOwner: true,
+        },
+      });
 
-    // If room not found, return an error
-    if (!room) {
-      return res.status(404).json({ error: "Room not found" });
+      if (!room) {
+        return res.status(404).json({ error: "Room not found" });
+      }
+
+      return res.status(200).json({
+        message: "Room retrieved successfully",
+        room,
+      });
+    } else {
+      // Fetch multiple rooms with pagination
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const take = parseInt(limit);
+
+      const [rooms, totalCount] = await prisma.$transaction([
+        prisma.Room.findMany({
+          skip,
+          take,
+          orderBy: {
+            [sortBy]: sortOrder,
+          },
+          include: {
+            photos: true,
+            hostelOwner: true,
+          },
+        }),
+        prisma.Room.count(),
+      ]);
+
+      const totalPages = Math.ceil(totalCount / take);
+
+      res.status(200).json({
+        message: "Rooms retrieved successfully",
+        data: rooms,
+        meta: {
+          currentPage: parseInt(page),
+          itemsPerPage: take,
+          totalItems: totalCount,
+          totalPages: totalPages,
+        },
+      });
     }
-
-    res.status(200).json({
-      message: "Room retrieved successfully",
-      room,
-    });
   } catch (error) {
-    console.error("Get room error:", error);
+    console.error("Get rooms error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
 module.exports = {
   addRoom,
-  getRoom,
+  getRooms,
 };

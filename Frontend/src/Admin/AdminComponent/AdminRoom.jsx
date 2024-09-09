@@ -1,35 +1,64 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useQuery } from "react-query";
 import axios from "axios";
-import { CiMenuKebab } from "react-icons/ci";
-import AddHostel from "./ComponentModels/AddRoom";
 import { CiEdit } from "react-icons/ci";
 import { MdDeleteOutline } from "react-icons/md";
+import AddRoom from "./ComponentModels/AddRoom";
+
+const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
+
+const axiosInstance = axios.create({
+  baseURL: apiUrl,
+});
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+const ROWS_PER_PAGE = 10; // Fixed number of rows per page
+
+const fetchRooms = async ({ queryKey }) => {
+  const [_key, { page, limit, sortBy, sortOrder, status }] = queryKey;
+  const response = await axiosInstance.get("/api/room/getRooms", {
+    params: { page, limit, sortBy, sortOrder, status },
+  });
+  return response.data;
+};
 
 const AdminRoom = ({ setModel, setEditData }) => {
-  const [roomData, setRoomData] = useState([]);
   const [selectedOptions, setOption] = useState("allRoom");
-  const [openEdit, setEdit] = useState(false);
+  const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
 
-  useEffect(() => {
-    const fetchRoomData = async () => {
-      const response = await axios.get("http://localhost:3000/rooms");
-      // console.table(response.data);
-      const data = response.data;
-      setRoomData(data);
-    };
-
-    fetchRoomData();
-  }, []);
+  const { data, isLoading, isError, error } = useQuery(
+    [
+      "rooms",
+      {
+        page,
+        limit: ROWS_PER_PAGE,
+        sortBy,
+        sortOrder,
+        status: selectedOptions === "allRoom" ? undefined : selectedOptions,
+      },
+    ],
+    fetchRooms,
+    {
+      keepPreviousData: true,
+      staleTime: 5000,
+    }
+  );
 
   const openAddForm = () => {
     setEditData("");
-    setTimeout(() => {
-      setModel(true);
-    }, 150);
-  };
-
-  const showEditOptions = () => {
-    setEdit(true);
+    setModel(true);
   };
 
   const EditRoomData = (room) => {
@@ -37,66 +66,70 @@ const AdminRoom = ({ setModel, setEditData }) => {
     setModel(true);
   };
 
+  const handleStatusChange = (status) => {
+    setOption(status);
+    setPage(1);
+  };
+
+  if (isLoading)
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  if (isError)
+    return (
+      <div className="w-full h-screen flex items-center justify-center text-red-500">
+        Error: {error.message}
+      </div>
+    );
+
+  const rooms = data?.data || [];
+  const totalItems = data?.meta?.totalItems || 0;
+  const totalPages = Math.ceil(totalItems / ROWS_PER_PAGE);
+
+  // Ensure we always have ROWS_PER_PAGE rows
+  const filledRooms = [...rooms];
+  while (filledRooms.length < ROWS_PER_PAGE) {
+    filledRooms.push({ id: `empty-${filledRooms.length}`, isEmpty: true });
+  }
+
   return (
-    <div className={`w-full flex flex-col gap-3 relative `}>
-      <h1 className="w-full text-[#636363] font-medium">Rooms</h1>
+    <div className="w-full h-screen flex flex-col">
+      <h1 className="text-[#636363] font-medium mb-3">Rooms</h1>
+
       {/* options */}
-      <div className="options w-full flex gap-3 my-3 text-sm">
-        <div className="w-[70%] flex gap-3">
-          <div
-            onClick={() => setOption("allRoom")}
-            className={`px-3 py-2 flex gap-1 ${
-              selectedOptions === "allRoom"
-                ? "border-[1px] border-blue-500 bg-blue-100 text-blue-500"
-                : "border-[1px]  border-[#636363] text-[#636363]"
-            } rounded-full font-medium cursor-pointer active:scale-90 transition-bg duration-300`}
-          >
-            <span>All rooms</span>
-            <span>({roomData?.length})</span>
-          </div>
-
-          <div
-            onClick={() => setOption("availableRoom")}
-            className={`px-3 py-2 flex gap-1 ${
-              selectedOptions === "availableRoom"
-                ? "border-[1px] border-blue-500 bg-blue-100 text-blue-500"
-                : "border-[1px]  border-[#636363] text-[#636363]"
-            } rounded-full font-medium cursor-pointer active:scale-90 transition-bg duration-300`}
-          >
-            <span>Available rooms</span>
-            <span>
-              ({roomData?.filter((room) => room.status === "Available").length})
-            </span>
-          </div>
-
-          <div
-            onClick={() => setOption("BookedRoom")}
-            className={`px-3 py-2 flex gap-1 ${
-              selectedOptions === "BookedRoom"
-                ? "border-[1px] border-blue-500 bg-blue-100 text-blue-500"
-                : "border-[1px]  border-[#636363] text-[#636363]"
-            } rounded-full font-medium cursor-pointer active:scale-90 transition-bg duration-300`}
-          >
-            <span>Booked rooms</span>
-            <span>
-              ({roomData?.filter((room) => room.status === "Booked").length})
-            </span>
-          </div>
+      <div className="flex gap-3 mb-3 text-sm">
+        <div className="flex gap-3 flex-grow">
+          {["allRoom", "Available", "Booked"].map((option) => (
+            <div
+              key={option}
+              onClick={() => handleStatusChange(option)}
+              className={`px-3 py-2 flex gap-1 ${
+                selectedOptions === option
+                  ? "border-[1px] border-blue-500 bg-blue-100 text-blue-500"
+                  : "border-[1px] border-[#636363] text-[#636363]"
+              } rounded-full font-medium cursor-pointer active:scale-90 transition-bg duration-300`}
+            >
+              <span>{option === "allRoom" ? "All rooms" : option}</span>
+              <span>({totalItems})</span>
+            </div>
+          ))}
         </div>
 
         {/* ADD ROOM BUTTON */}
-        <div onClick={openAddForm} className="w-[30%] flex justify-end px-4">
-          <button className="bg-blue-500 text-white font-medium rounded-md px-3 py-1 active:scale-95 transition-all ease-in-out">
-            Add Room
-          </button>
-        </div>
+        <button
+          onClick={openAddForm}
+          className="bg-blue-500 text-white font-medium rounded-md px-3 py-1 active:scale-95 transition-all ease-in-out"
+        >
+          Add Room
+        </button>
       </div>
 
       {/* TABLE  */}
-
-      <div className="w-full flex flex-col gap-3 justify-center items-center border-[1px] border-blue-100 rounded-md">
-        <table className="w-full bg-blue-50">
-          <thead>
+      <div className="flex-grow border-[1px] border-blue-100 rounded-md overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-blue-50">
             <tr>
               <th className="font-medium text-left pl-4 py-2 text-[#636363]">
                 Room number
@@ -113,144 +146,89 @@ const AdminRoom = ({ setModel, setEditData }) => {
               <th className="font-medium text-left pl-4 py-2 text-[#636363]">
                 Status
               </th>
+              <th className="font-medium text-left pl-4 py-2 text-[#636363]">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white">
-            {selectedOptions === "allRoom"
-              ? roomData?.map((room, index) => {
-                  return (
-                    <>
-                      <tr
-                        key={index}
-                        className="border-[1px] border-blue-100 relative"
+            {filledRooms.map((room) => (
+              <tr
+                key={room.id}
+                className={`border-t border-blue-100 ${
+                  room.isEmpty ? "h-[43px]" : ""
+                }`}
+              >
+                {!room.isEmpty ? (
+                  <>
+                    <td className="pl-4 py-2 text-blue-600">
+                      {room.roomIdentifier}
+                    </td>
+                    <td className="pl-4 py-2 text-[#636363]">{room.type}</td>
+                    <td className="pl-4 py-2 text-[#636363]">{room.floor}</td>
+                    <td className="pl-4 py-2 text-[#636363]">
+                      {Array.isArray(room.amenities)
+                        ? room.amenities.map((amenity, index) => (
+                            <span
+                              key={index}
+                              className="inline-block bg-gray-200 rounded-full px-2 py-1 text-xs font-semibold text-gray-700 mr-1 mb-1"
+                            >
+                              {amenity}
+                            </span>
+                          ))
+                        : room.amenities}
+                    </td>
+                    <td className="pl-4 py-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          room.status === "Available"
+                            ? "bg-blue-100 text-blue-500"
+                            : room.status === "Reserved"
+                            ? "bg-green-100 text-green-500"
+                            : "bg-orange-100 text-orange-500"
+                        }`}
                       >
-                        <td className="p-5 font-medium w-[15%] ">#{room.id}</td>
-                        <td className="p-5 font-medium w-[15%] text-[#636363]">
-                          {room.type}
-                        </td>
-                        <td className="p-5 font-medium w-[15%] text-[#636363]">
-                          {room.floor}
-                        </td>
-                        <td className="p-5 font-medium w-[25%] text-[#636363]">
-                          {room.amenities}
-                        </td>
-                        <td className={`p-5 font-medium w-[20%]`}>
-                          <span
-                            className={`${
-                              room.status === "Available"
-                                ? "bg-blue-100 text-blue-500 px-3 py-1 rounded-xl"
-                                : room.status === "Reserved"
-                                ? "bg-green-100 text-green-500 rounded-xl px-4 py-1"
-                                : "bg-orange-100 text-orange-500 rounded-xl px-4 py-1"
-                            }`}
-                          >
-                            {room.status}
-                          </span>
-                        </td>
-                        <td className="py-8 font-medium flex gap-4 items-center justify-center h-full">
-                          <CiEdit
-                            onClick={() => EditRoomData(room)}
-                            className="w-6 h-6 cursor-pointer"
-                          />
-                          <MdDeleteOutline className="w-6 h-6 cursor-pointer" />
-                        </td>
-                      </tr>
-                    </>
-                  );
-                })
-              : selectedOptions === "availableRoom"
-              ? roomData
-                  .filter((room) => room.status === "Available")
-                  ?.map((room, index) => {
-                    return (
-                      <>
-                        <tr
-                          key={index}
-                          className="border-[1px] border-blue-100 "
-                        >
-                          <td className="p-5 font-medium w-[15%] ">
-                            #{room.id}
-                          </td>
-                          <td className="p-5 font-medium w-[15%] text-[#636363]">
-                            {room.type}
-                          </td>
-                          <td className="p-5 font-medium w-[15%] text-[#636363]">
-                            {room.floor}
-                          </td>
-                          <td className="p-5 font-medium w-[25%] text-[#636363]">
-                            {room.amenities}
-                          </td>
-                          <td className={`p-5 font-medium w-[20%] `}>
-                            <span
-                              className={`${
-                                room.status === "Available"
-                                  ? "bg-blue-100 text-blue-500 px-3 py-1 rounded-xl"
-                                  : room.status === "Reserved"
-                                  ? "bg-green-100 text-green-500 rounded-xl px-4 py-1"
-                                  : "bg-orange-100 text-orange-500 rounded-xl px-4 py-1"
-                              }`}
-                            >
-                              {room.status}
-                            </span>
-                          </td>
-                          <td className="py-8 font-medium flex gap-4 items-center justify-center h-full">
-                            <CiEdit
-                              onClick={() => EditRoomData(room)}
-                              className="w-6 h-6 cursor-pointer"
-                            />
-                            <MdDeleteOutline className="w-6 h-6 cursor-pointer" />
-                          </td>
-                        </tr>
-                      </>
-                    );
-                  })
-              : roomData
-                  .filter((room) => room.status === "Booked")
-                  ?.map((room, index) => {
-                    return (
-                      <>
-                        <tr
-                          key={index}
-                          className="border-[1px] border-blue-100 "
-                        >
-                          <td className="p-5 font-medium w-[15%] ">
-                            #{room.id}
-                          </td>
-                          <td className="p-5 font-medium w-[15%] text-[#636363]">
-                            {room.type}
-                          </td>
-                          <td className="p-5 font-medium w-[15%] text-[#636363]">
-                            {room.floor}
-                          </td>
-                          <td className="p-5 font-medium w-[25%] text-[#636363]">
-                            {room.amenities}
-                          </td>
-                          <td className={`p-5 font-medium w-[20%] `}>
-                            <span
-                              className={`${
-                                room.status === "Available"
-                                  ? "bg-blue-100 text-blue-500 px-3 py-1 rounded-xl"
-                                  : room.status === "Reserved"
-                                  ? "bg-green-100 text-green-500 rounded-xl px-4 py-1"
-                                  : "bg-orange-100 text-orange-500 rounded-xl px-4 py-1"
-                              }`}
-                            >
-                              {room.status}
-                            </span>
-                          </td>
-                          <td className="py-8 font-medium flex gap-4 items-center justify-center h-full">
-                            <CiEdit
-                              onClick={() => EditRoomData(room)}
-                              className="w-6 h-6 cursor-pointer"
-                            />
-                            <MdDeleteOutline className="w-6 h-6 cursor-pointer" />
-                          </td>
-                        </tr>
-                      </>
-                    );
-                  })}
+                        {room.status}
+                      </span>
+                    </td>
+                    <td className="pl-4 py-2">
+                      <div className="flex gap-4">
+                        <CiEdit
+                          onClick={() => EditRoomData(room)}
+                          className="w-6 h-6 cursor-pointer text-blue-500 hover:text-blue-700"
+                        />
+                        <MdDeleteOutline className="w-6 h-6 cursor-pointer text-red-500 hover:text-red-700" />
+                      </div>
+                    </td>
+                  </>
+                ) : (
+                  <td colSpan="6"></td>
+                )}
+              </tr>
+            ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-4">
+        <button
+          onClick={() => setPage((old) => Math.max(old - 1, 1))}
+          disabled={page === 1}
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
+        >
+          Previous
+        </button>
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <button
+          onClick={() => setPage((old) => Math.min(old + 1, totalPages))}
+          disabled={page === totalPages}
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
+        >
+          Next
+        </button>
       </div>
     </div>
   );
