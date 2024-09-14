@@ -1,16 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import hms from "../../assets/Admin/hms.png";
-import { IoHomeOutline } from "react-icons/io5";
+import {
+  IoHomeOutline,
+  IoBookmarkOutline,
+  IoPricetagsOutline,
+  IoLogOutOutline,
+  IoCalendarOutline,
+} from "react-icons/io5";
 import { CiEdit } from "react-icons/ci";
 import { HiOutlineClipboardDocumentCheck } from "react-icons/hi2";
-import { IoBookmarkOutline } from "react-icons/io5";
-import { IoPricetagsOutline } from "react-icons/io5";
 import { GiTakeMyMoney } from "react-icons/gi";
 import AdminDashboard from "../AdminComponent/AdminDashboard";
 import AdminFrontDesk from "../AdminComponent/AdminFrontDesk";
 import AdminGuest from "../AdminComponent/AdminGuest";
 import AdminRoom from "../AdminComponent/AdminRoom";
-import AdminRate from "../AdminComponent/AdminRate";
+import AdminBookings from "../AdminComponent/AdminBookings"; // New import
 import AdminDeal from "../AdminComponent/AdminDeal";
 import AddHostel from "../AdminComponent/ComponentModels/AddRoom";
 
@@ -24,6 +28,14 @@ const AdminPage = () => {
     setModel(false);
   };
 
+  const handleLogout = () => {
+    // Implement logout logic here
+    console.log("Logout clicked");
+    // For example:
+    // logout();
+    // navigate('/login');
+  };
+
   return (
     <div className="w-full max-w-screen-2xl mx-auto flex gap-3 relative h-screen">
       {/* LEFT SECTION */}
@@ -34,7 +46,7 @@ const AdminPage = () => {
             novotel
           </h1>
         </div>
-        <div className="w-full flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-4 flex-grow">
           <div
             onClick={(e) => handleClick(e, "dashboard")}
             className={`${
@@ -53,7 +65,6 @@ const AdminPage = () => {
             } w-full flex gap-2 cursor-pointer hover:bg-blue-200 hover:text-blue-600 hover:font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group`}
           >
             <CiEdit className="w-6 h-6" />
-
             <h1>Front Desk</h1>
           </div>
           <div
@@ -63,7 +74,6 @@ const AdminPage = () => {
             } w-full flex gap-2 cursor-pointer hover:bg-blue-200 hover:text-blue-600 hover:font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group`}
           >
             <HiOutlineClipboardDocumentCheck className="w-6 h-6" />
-
             <h1>Guest</h1>
           </div>
           <div
@@ -73,7 +83,6 @@ const AdminPage = () => {
             } w-full flex gap-2 cursor-pointer hover:bg-blue-200 hover:text-blue-600 hover:font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group`}
           >
             <IoBookmarkOutline className="w-6 h-6" />
-
             <h1>Room</h1>
           </div>
           <div
@@ -83,36 +92,45 @@ const AdminPage = () => {
             } w-full flex gap-2 cursor-pointer hover:bg-blue-200 hover:text-blue-600 hover:font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group`}
           >
             <IoPricetagsOutline className="w-6 h-6" />
-
             <h1>Deal</h1>
           </div>
           <div
-            onClick={(e) => handleClick(e, "rate")}
+            onClick={(e) => handleClick(e, "bookings")}
             className={`${
-              active === "rate" ? "bg-blue-200 text-blue-500 font-medium" : ""
+              active === "bookings"
+                ? "bg-blue-200 text-blue-500 font-medium"
+                : ""
             } w-full flex gap-2 cursor-pointer hover:bg-blue-200 hover:text-blue-600 hover:font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group`}
           >
-            <GiTakeMyMoney className="w-6 h-6" />
-
-            <h1>Rate</h1>
+            <IoCalendarOutline className="w-6 h-6" />
+            <h1>Bookings</h1>
           </div>
           <div
             onClick={(e) => handleClick(e, "amenities")}
             className={`${
-              active === "rate" ? "bg-blue-200 text-blue-500 font-medium" : ""
+              active === "amenities"
+                ? "bg-blue-200 text-blue-500 font-medium"
+                : ""
             } w-full flex gap-2 cursor-pointer hover:bg-blue-200 hover:text-blue-600 hover:font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group`}
           >
             <GiTakeMyMoney className="w-6 h-6" />
-
             <h1>Amenities</h1>
           </div>
+        </div>
+
+        {/* Logout option */}
+        <div
+          onClick={handleLogout}
+          className="w-full flex gap-2 cursor-pointer hover:bg-red-200 hover:text-red-600 hover:font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group mt-auto"
+        >
+          <IoLogOutOutline className="w-6 h-6" />
+          <h1>Logout</h1>
         </div>
       </div>
 
       {/* RIGHT SECTION */}
-
       <div className={`w-[80%] flex flex-col gap-3 ml-[19%]`}>
-        {/* This is DIV for the Serach and profile */}
+        {/* This is DIV for the Search and profile */}
         <div className="w-full flex items-center my-2 mb-6 gap-2">
           <img className="w-14 h-14 object-cover" src="" alt="" />
           <h1 className="uppercase text-blue-500 font-semibold text-xl">
@@ -129,9 +147,11 @@ const AdminPage = () => {
           <AdminDeal />
         ) : active === "room" ? (
           <AdminRoom setModel={setModel} setEditData={setEditData} />
-        ) : (
-          <AdminRate />
-        )}
+        ) : active === "bookings" ? (
+          <AdminBookings />
+        ) : active === "amenities" ? (
+          <div>Amenities Component</div> // Replace with actual Amenities component when available
+        ) : null}
 
         {/* ADD ROOM POPUP MODEL */}
         {openModel && <AddHostel setModel={setModel} editData={editData} />}

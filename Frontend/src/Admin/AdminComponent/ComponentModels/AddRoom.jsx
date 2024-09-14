@@ -11,11 +11,11 @@ console.log("API URL:", apiUrl);
 const axiosInstance = axios.create({
   baseURL: apiUrl,
 });
-const token = localStorage.getItem("token");
-console.log(token);
 
+console.log(apiUrl);
 axiosInstance.interceptors.request.use(
   (config) => {
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
@@ -57,11 +57,10 @@ const AddRoom = ({ setModel, editData }) => {
   const addRoomMutation = useMutation(
     (newRoom) => {
       const token = localStorage.getItem("token");
-      console.log("Token before API call:", token);
       if (!token) {
         throw new Error("No authentication token found");
       }
-      return axiosInstance.post("/api/room/addRoom", newRoom);
+      return axiosInstance.post("/api/rooms/addRoom", newRoom);
     },
     {
       onSuccess: (data) => {
@@ -71,15 +70,7 @@ const AddRoom = ({ setModel, editData }) => {
       },
       onError: (error) => {
         console.error("Error adding room:", error);
-        if (error.response && error.response.status === 401) {
-          navigate("/login");
-        } else {
-          setError(
-            `Failed to add room: ${
-              error.response?.data?.message || error.message
-            }`
-          );
-        }
+        handleError(error);
       },
     }
   );
@@ -87,11 +78,15 @@ const AddRoom = ({ setModel, editData }) => {
   const updateRoomMutation = useMutation(
     (updatedRoom) => {
       const token = localStorage.getItem("token");
-      console.log("Token before API call:", token);
       if (!token) {
         throw new Error("No authentication token found");
       }
-      return axiosInstance.put(`/api/room/${updatedRoom.id}`, updatedRoom);
+
+      console.log(updatedRoom);
+      return axiosInstance.put(
+        `/api/rooms/updateRoom/${updatedRoom.id}`,
+        updatedRoom
+      );
     },
     {
       onSuccess: (data) => {
@@ -101,33 +96,46 @@ const AddRoom = ({ setModel, editData }) => {
       },
       onError: (error) => {
         console.error("Error updating room:", error);
-        if (error.response && error.response.status === 401) {
-          navigate("/login");
-        } else {
-          setError(
-            `Failed to update room: ${
-              error.response?.data?.message || error.message
-            }`
-          );
-        }
+        handleError(error);
       },
     }
   );
 
   useEffect(() => {
-    if (editData !== "") {
-      setRoomData(editData);
+    if (editData) {
+      setRoomData({
+        ...editData,
+        amenities: Array.isArray(editData.amenities)
+          ? editData.amenities
+          : JSON.parse(editData.amenities || "[]"),
+      });
     }
   }, [editData]);
+
+  const handleError = (error) => {
+    if (error.response && error.response.status === 401) {
+      navigate("/login");
+    } else {
+      setError(
+        `Failed to ${editData ? "update" : "add"} room: ${
+          error.response?.data?.message || error.message
+        }`
+      );
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     try {
-      if (editData === "") {
-        await addRoomMutation.mutateAsync(roomData);
+      const dataToSubmit = {
+        ...roomData,
+        amenities: JSON.stringify(roomData.amenities),
+      };
+      if (editData) {
+        await updateRoomMutation.mutateAsync(dataToSubmit);
       } else {
-        await updateRoomMutation.mutateAsync(roomData);
+        await addRoomMutation.mutateAsync(dataToSubmit);
       }
     } catch (error) {
       console.error("Mutation error:", error);
@@ -154,7 +162,7 @@ const AddRoom = ({ setModel, editData }) => {
       <div className="bg-white rounded-lg w-full max-w-2xl">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-800">
-            {editData === "" ? "Add a new room" : "Edit room details"}
+            {editData ? "Edit room details" : "Add a new room"}
           </h2>
           <RxCross2
             onClick={() => setModel(false)}
@@ -339,9 +347,9 @@ const AddRoom = ({ setModel, editData }) => {
             >
               {addRoomMutation.isLoading || updateRoomMutation.isLoading
                 ? "Processing..."
-                : editData === ""
-                ? "Add Room"
-                : "Update Room"}
+                : editData
+                ? "Update Room"
+                : "Add Room"}
             </button>
           </div>
         </form>
