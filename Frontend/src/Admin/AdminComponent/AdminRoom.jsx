@@ -22,13 +22,20 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-const ROWS_PER_PAGE = 10; // Fixed number of rows per page
+const ROWS_PER_PAGE = 10;
 
 const fetchRooms = async ({ queryKey }) => {
   const [_key, { page, limit, sortBy, sortOrder, status }] = queryKey;
-  const response = await axiosInstance.get("/api/room/getRooms", {
-    params: { page, limit, sortBy, sortOrder, status },
-  });
+  const endpoint = "/api/rooms/getRooms";
+
+  const params = { page, limit, sortBy, sortOrder };
+  if (status && status !== "allRoom") {
+    params.status = status;
+  }
+
+  console.log("Fetching rooms with params:", params);
+  const response = await axiosInstance.get(endpoint, { params });
+  console.log("API response:", response.data);
   return response.data;
 };
 
@@ -38,7 +45,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  const { data, isLoading, isError, error } = useQuery(
+  const { data, isLoading, isError, error, refetch } = useQuery(
     [
       "rooms",
       {
@@ -46,13 +53,19 @@ const AdminRoom = ({ setModel, setEditData }) => {
         limit: ROWS_PER_PAGE,
         sortBy,
         sortOrder,
-        status: selectedOptions === "allRoom" ? undefined : selectedOptions,
+        status: selectedOptions,
       },
     ],
     fetchRooms,
     {
       keepPreviousData: true,
       staleTime: 5000,
+      onSuccess: (data) => {
+        console.log("Query succeeded. Received data:", data);
+      },
+      onError: (error) => {
+        console.error("Query failed:", error);
+      },
     }
   );
 
@@ -67,8 +80,10 @@ const AdminRoom = ({ setModel, setEditData }) => {
   };
 
   const handleStatusChange = (status) => {
+    console.log("Status changed to:", status);
     setOption(status);
     setPage(1);
+    refetch();
   };
 
   if (isLoading)
@@ -88,7 +103,6 @@ const AdminRoom = ({ setModel, setEditData }) => {
   const totalItems = data?.meta?.totalItems || 0;
   const totalPages = Math.ceil(totalItems / ROWS_PER_PAGE);
 
-  // Ensure we always have ROWS_PER_PAGE rows
   const filledRooms = [...rooms];
   while (filledRooms.length < ROWS_PER_PAGE) {
     filledRooms.push({ id: `empty-${filledRooms.length}`, isEmpty: true });
@@ -101,7 +115,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
       {/* options */}
       <div className="flex gap-3 mb-3 text-sm">
         <div className="flex gap-3 flex-grow">
-          {["allRoom", "Available", "Booked"].map((option) => (
+          {["allRoom", "Available", "Booked", "Reserved"].map((option) => (
             <div
               key={option}
               onClick={() => handleStatusChange(option)}
@@ -112,7 +126,7 @@ const AdminRoom = ({ setModel, setEditData }) => {
               } rounded-full font-medium cursor-pointer active:scale-90 transition-bg duration-300`}
             >
               <span>{option === "allRoom" ? "All rooms" : option}</span>
-              <span>({totalItems})</span>
+              <span>({option === selectedOptions ? totalItems : "..."})</span>
             </div>
           ))}
         </div>
@@ -213,7 +227,10 @@ const AdminRoom = ({ setModel, setEditData }) => {
       {/* Pagination */}
       <div className="flex justify-between items-center mt-4">
         <button
-          onClick={() => setPage((old) => Math.max(old - 1, 1))}
+          onClick={() => {
+            setPage((old) => Math.max(old - 1, 1));
+            refetch();
+          }}
           disabled={page === 1}
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
         >
@@ -223,7 +240,10 @@ const AdminRoom = ({ setModel, setEditData }) => {
           Page {page} of {totalPages}
         </span>
         <button
-          onClick={() => setPage((old) => Math.min(old + 1, totalPages))}
+          onClick={() => {
+            setPage((old) => Math.min(old + 1, totalPages));
+            refetch();
+          }}
           disabled={page === totalPages}
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
         >

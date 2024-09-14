@@ -17,17 +17,22 @@ model User {
 }
 
 model HostelOwner {
-  id             Int    @id @default(autoincrement())
-  hostelName     String
-  hostelLocation String
-  ownerName      String
-  email          String @unique
-  contact        String
-  location       String
-  address        String
-  password       String
-  description    String
-  rooms          Room[]
+  id          Int      @id @default(autoincrement())
+  hostelName  String
+  ownerName   String
+  email       String   @unique
+  contact     String
+  location    String
+  address     String
+  latitude    Float
+  longitude   Float
+  password    String
+  description String
+  mainPhoto   String? // New field for the main hostel photo
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  Room        Room[]
+  Deal        Deal[]
 }
 
 model Room {
@@ -46,18 +51,20 @@ model Room {
   hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
   hostelOwnerId Int
 
-  photos RoomPhoto[]
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model RoomPhoto {
-  id     Int    @id @default(autoincrement())
-  url    String
-  roomId Int
-  room   Room   @relation(fields: [roomId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Deal {
+  id            Int         @id @default(autoincrement())
+  name          String
+  roomType      String
+  discount      Float
+  startDate     DateTime
+  endDate       DateTime
+  description   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  hostelOwnerId Int
 }

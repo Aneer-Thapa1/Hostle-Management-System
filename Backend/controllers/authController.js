@@ -153,10 +153,10 @@ const login = async (req, res) => {
       .json({ success: false, message: "An error occurred during login" });
   }
 };
+
 const registerOwner = async (req, res) => {
   const {
     hostelName,
-    hostelLocation,
     ownerName,
     email,
     contact,
@@ -164,18 +164,33 @@ const registerOwner = async (req, res) => {
     address,
     password,
     description,
+    latitude,
+    longitude,
   } = req.body;
 
+  console.log(
+    hostelName,
+    ownerName,
+    email,
+    contact,
+    location,
+    address,
+    password,
+    description,
+    latitude,
+    longitude
+  );
   if (
     !hostelName ||
-    !hostelLocation ||
     !ownerName ||
     !email ||
     !contact ||
     !location ||
     !address ||
     !password ||
-    !description
+    !description ||
+    !latitude ||
+    !longitude
   ) {
     return res.status(400).send("Please fill all the required fields.");
   }

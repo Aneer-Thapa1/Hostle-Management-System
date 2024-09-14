@@ -4,8 +4,6 @@ const auth = (req, res, next) => {
   // Get token from the header
   const authHeader = req.header("Authorization");
 
-  console.log("Auth Header:", authHeader);
-
   // Check if auth header is not provided
   if (!authHeader) {
     return res
@@ -23,13 +21,9 @@ const auth = (req, res, next) => {
   // Extract the token (remove "Bearer " from the beginning)
   const token = authHeader.slice(7);
 
-  console.log("Extracted Token:", token);
-
   try {
     // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET); // Use your secret key
-
-    console.log("Decoded Token:", decoded);
 
     // Attach the decoded user to the request object
     req.user = decoded.user;

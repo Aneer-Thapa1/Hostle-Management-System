@@ -11,6 +11,7 @@ import "./App.css";
 import AdminPage from "./Admin/AdminPage/AdminPage";
 import HostSignup from "./Admin/AdminPage/HostSignup";
 import UserSingleRoom from "./User/pages/UserSingleRoom";
+import Home from "./User/pages/Home";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/hostSignup" element={<HostSignup />} />
           <Route path="/login" element={<Login />} />
           <Route path="/userSingleRoom" element={<UserSingleRoom />} />
