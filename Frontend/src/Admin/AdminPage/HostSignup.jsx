@@ -2,10 +2,7 @@ import React, { useState } from "react";
 import { useMutation } from "react-query";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import {
-  WidgetLoader,
-  Widget as CloudinaryWidget,
-} from "react-cloudinary-upload-widget";
+import { WidgetLoader, Widget } from "react-cloudinary-upload-widget";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
@@ -21,11 +18,6 @@ const steps = [
   "Security",
   "Description & Photo",
 ];
-
-const Widget = React.memo((props) => {
-  console.log(props);
-  return <CloudinaryWidget {...props} />;
-});
 
 const ProgressIndicator = ({ currentStep }) => {
   return (
@@ -91,6 +83,7 @@ const Input = ({
 );
 
 const registerOwner = async (data) => {
+  console.log("Sending data to backend:", data);
   const response = await axios.post(`${apiUrl}/api/auth/registerOwner`, data);
   return response.data;
 };
@@ -140,13 +133,25 @@ export default function HostSignup() {
     }
   };
 
-  const handlePhotoUpload = (error, result, widget) => {
+  const handlePhotoUpload = (result, error) => {
     if (error) {
+      console.error("Error during upload:", error);
+
       setErrors((prev) => ({ ...prev, mainPhoto: "Failed to upload photo" }));
       return;
     }
-    setFormData((prev) => ({ ...prev, mainPhoto: result.info.secure_url }));
-    widget.close();
+
+    console.log("Upload result:", result);
+
+    if (result.event === "success") {
+      const imageUrl = result.info.secure_url;
+      console.log("Upload successful. Image URL:", imageUrl);
+
+      setFormData((prev) => ({
+        ...prev,
+        mainPhoto: imageUrl,
+      }));
+    }
   };
 
   const validateStep = () => {
@@ -197,6 +202,7 @@ export default function HostSignup() {
       } else if (!isConfirming) {
         setIsConfirming(true);
       } else {
+        console.log("Submitting form data:", formData);
         mutation.mutate(formData);
       }
     }
@@ -349,8 +355,8 @@ export default function HostSignup() {
                   multiple={false}
                   autoClose={false}
                   onSuccess={handlePhotoUpload}
-                  onFailure={(e) => console.log(e)}
-                  logging={false}
+                  onFailure={(e) => console.error("Upload failed:", e)}
+                  logging={true}
                   customPublicId={"sample"}
                   eager={"w_400,h_300,c_pad|w_260,h_200,c_crop"}
                   use_filename={false}
@@ -440,12 +446,23 @@ export default function HostSignup() {
                 Cancel
               </button>
               <button
-                onClick={() => mutation.mutate(formData)}
+                onClick={() => {
+                  console.log("Confirming submission with data:", formData);
+                  mutation.mutate(formData);
+                }}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300"
               >
                 Confirm
               </button>
-            </div>
+            </div>{" "}
+          </div>
+        </div>
+      )}
+      {mutation.isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-gray-800 p-8 rounded-lg">
+            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+            <p className="text-white mt-4">Registering...</p>
           </div>
         </div>
       )}

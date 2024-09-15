@@ -166,6 +166,7 @@ const registerOwner = async (req, res) => {
     description,
     latitude,
     longitude,
+    mainPhoto,
   } = req.body;
 
   console.log(
@@ -212,15 +213,17 @@ const registerOwner = async (req, res) => {
 
     const newHostelOwner = await prisma.hostelOwner.create({
       data: {
-        hostelName: hostelName,
-        hostelLocation: hostelLocation,
-        ownerName: ownerName,
-        email: email,
-        contact: contact,
-        location: location,
-        address: address,
+        hostelName,
+        ownerName,
+        email,
+        contact,
+        location,
+        mainPhoto,
+        address,
         password: hashedPassword,
-        description: description,
+        description,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
       },
     });
 
@@ -230,6 +233,8 @@ const registerOwner = async (req, res) => {
         hostelName: newHostelOwner.hostelName,
         ownerName: newHostelOwner.ownerName,
         email: newHostelOwner.email,
+        latitude: newHostelOwner.latitude,
+        longitude: newHostelOwner.longitude,
       },
     });
   } catch (error) {
