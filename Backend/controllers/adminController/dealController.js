@@ -10,7 +10,9 @@ const getDeals = async (req, res) => {
     sortOrder = "desc",
     roomType,
   } = req.query;
-  const hostelOwnerId = req.user.id; // Assuming you have authentication middleware
+
+  const hostelOwnerId = req.user.user.id;
+  console.log(hostelOwnerId);
 
   try {
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -55,7 +57,7 @@ const getDeals = async (req, res) => {
 const addDeal = async (req, res) => {
   const { name, roomType, discount, startDate, endDate, description } =
     req.body;
-  const hostelOwnerId = req.user.id; // Assuming you have authentication middleware
+  const hostelOwnerId = req.user.user.id; // Assuming you have authentication middleware
 
   try {
     const newDeal = await prisma.deal.create({

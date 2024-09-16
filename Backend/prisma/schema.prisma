@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,51 +11,55 @@ datasource db {
 }
 
 model User {
-  id           Int    @id @default(autoincrement())
-  userAddress  String
-  userContact  String
-  userEmail    String @unique
-  userName     String
-  userPassword String
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  role      String    @default("user") // "user", "hostel_owner", "admin"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+  ratings   Rating[]
 }
 
 model HostelOwner {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   hostelName  String
   ownerName   String
-  email       String   @unique
+  email       String    @unique
   contact     String
+  password    String
   location    String
   address     String
   latitude    Float
   longitude   Float
-  password    String
-  description String
-  mainPhoto   String? // New field for the main hostel photo
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  Room        Room[]
-  Deal        Deal[]
+  description String    @db.Text
+  mainPhoto   String
+  avgRating   Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  rooms       Room[]
+  deals       Deal[]
+  bookings    Booking[]
+  ratings     Rating[]
 }
 
 model Room {
-  id             Int       @id @default(autoincrement())
-  roomIdentifier String    @unique
+  id             Int         @id @default(autoincrement())
+  roomIdentifier String
   type           String
-  floor          String
-  amenities      String // We'll store this as a JSON string
-  status         String    @default("Available")
+  floor          Int
+  amenities      String      @db.Text // Store as JSON string
+  status         String // "available", "occupied", "maintenance"
   capacity       Int
-  description    String
+  description    String      @db.Text
   price          Float
-  roomCondition  String?
-  dateAvailable  DateTime?
-
-  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  hostelOwnerId Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  roomCondition  String
+  dateAvailable  DateTime
+  hostelOwnerId  Int
+  hostelOwner    HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model Deal {
@@ -62,9 +69,38 @@ model Deal {
   discount      Float
   startDate     DateTime
   endDate       DateTime
-  description   String?
+  description   String      @db.Text
+  hostelOwnerId Int
+  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  bookings      Booking[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  hostelOwnerId Int
+}
+
+model Booking {
+  id           Int         @id @default(autoincrement())
+  userId       Int
+  user         User        @relation(fields: [userId], references: [id])
+  hostelId     Int
+  hostel       HostelOwner @relation(fields: [hostelId], references: [id])
+  dealId       Int?
+  deal         Deal?       @relation(fields: [dealId], references: [id])
+  checkInDate  DateTime
+  checkOutDate DateTime
+  totalPrice   Float
+  status       String // "pending", "confirmed", "cancelled", "completed"
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Rating {
+  id        Int         @id @default(autoincrement())
+  rating    Int
+  comment   String?     @db.Text
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  hostelId  Int
+  hostel    HostelOwner @relation(fields: [hostelId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }

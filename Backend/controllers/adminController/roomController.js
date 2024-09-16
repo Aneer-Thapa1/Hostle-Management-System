@@ -13,19 +13,30 @@ const addRoom = async (req, res) => {
     capacity,
     description,
     price,
+    dateAvailable,
+    roomCondition,
   } = req.body;
 
   // Validate required fields
-  if (!roomIdentifier || !type || !floor || !capacity || !description) {
+  if (
+    !roomIdentifier ||
+    !type ||
+    !floor ||
+    !capacity ||
+    !description ||
+    !price
+  ) {
     return res.status(400).json({
       error:
         "Room identifier, type, floor, capacity, description, and price are required",
     });
   }
 
+  console.log(floor);
+
   try {
     // Get the hostelOwnerId from the authenticated user
-    const hostelOwnerId = req.user.id;
+    const hostelOwnerId = req.user.user.id;
 
     // Ensure the HostelOwner exists
     const existingHostelOwner = await prisma.hostelOwner.findUnique({
@@ -41,12 +52,14 @@ const addRoom = async (req, res) => {
       data: {
         roomIdentifier,
         type,
-        floor,
+        floor: parseInt(floor, 10),
         amenities: JSON.stringify(amenities), // Store amenities as a JSON string
-        status: status || "Available",
+        status: status || "available",
         capacity: parseInt(capacity, 10),
         description,
         price: parseFloat(price),
+        dateAvailable: dateAvailable ? new Date(dateAvailable) : new Date(),
+        roomCondition: roomCondition || "good",
         hostelOwner: { connect: { id: hostelOwnerId } },
       },
     });
@@ -95,11 +108,11 @@ const getRooms = async (req, res) => {
   try {
     if (roomId) {
       // Fetch a single room if roomId is provided
-      const room = await prisma.Room.findUnique({
+      const room = await prisma.room.findUnique({
         where: { id: parseInt(roomId) },
         include: {
-          photos: true,
           hostelOwner: true,
+          bookings: true,
         },
       });
 
@@ -125,7 +138,7 @@ const getRooms = async (req, res) => {
       console.log("Applied filter:", filter);
 
       const [rooms, totalCount] = await prisma.$transaction([
-        prisma.Room.findMany({
+        prisma.room.findMany({
           where: filter,
           skip,
           take,
@@ -133,11 +146,10 @@ const getRooms = async (req, res) => {
             [sortBy]: sortOrder,
           },
           include: {
-            photos: true,
             hostelOwner: true,
           },
         }),
-        prisma.Room.count({ where: filter }),
+        prisma.room.count({ where: filter }),
       ]);
 
       console.log(`Found ${rooms.length} rooms out of ${totalCount} total`);
@@ -166,7 +178,6 @@ const getRooms = async (req, res) => {
 
 const updateRoom = async (req, res) => {
   const { roomId } = req.params;
-  console.log("first");
   const {
     roomIdentifier,
     type,
@@ -176,6 +187,8 @@ const updateRoom = async (req, res) => {
     capacity,
     description,
     price,
+    dateAvailable,
+    roomCondition,
   } = req.body;
 
   if (!roomId) {
@@ -202,12 +215,14 @@ const updateRoom = async (req, res) => {
     const updateData = {};
     if (roomIdentifier) updateData.roomIdentifier = roomIdentifier;
     if (type) updateData.type = type;
-    if (floor) updateData.floor = floor;
+    if (floor) updateData.floor = parseInt(floor, 10);
     if (amenities) updateData.amenities = JSON.stringify(amenities);
     if (status) updateData.status = status;
     if (capacity) updateData.capacity = parseInt(capacity, 10);
     if (description) updateData.description = description;
     if (price) updateData.price = parseFloat(price);
+    if (dateAvailable) updateData.dateAvailable = new Date(dateAvailable);
+    if (roomCondition) updateData.roomCondition = roomCondition;
 
     // Update the room
     const updatedRoom = await prisma.room.update({
@@ -237,8 +252,49 @@ const updateRoom = async (req, res) => {
   }
 };
 
+const deleteRoom = async (req, res) => {
+  const { roomId } = req.params;
+
+  if (!roomId) {
+    return res.status(400).json({ error: "Room ID is required" });
+  }
+
+  try {
+    // Get the hostelOwnerId from the authenticated user
+    const hostelOwnerId = req.user.id;
+
+    // Check if the room exists and belongs to the authenticated hostel owner
+    const existingRoom = await prisma.room.findFirst({
+      where: {
+        id: parseInt(roomId),
+        hostelOwnerId: hostelOwnerId,
+      },
+    });
+
+    if (!existingRoom) {
+      return res.status(404).json({ error: "Room not found or unauthorized" });
+    }
+
+    // Delete the room
+    await prisma.room.delete({
+      where: { id: parseInt(roomId) },
+    });
+
+    res.status(200).json({
+      message: "Room deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete room error:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      details: error.message,
+    });
+  }
+};
+
 module.exports = {
   addRoom,
   getRooms,
   updateRoom,
+  deleteRoom,
 };

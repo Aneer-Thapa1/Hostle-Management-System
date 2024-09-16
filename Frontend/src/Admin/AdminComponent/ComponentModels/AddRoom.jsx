@@ -250,9 +250,9 @@ const AddRoom = ({ setModel, editData }) => {
                 id="floor"
                 value={roomData.floor}
               >
-                <option value="Floor 1">Floor 1</option>
-                <option value="Floor 2">Floor 2</option>
-                <option value="Floor 3">Floor 3</option>
+                <option value="1">Floor 1</option>
+                <option value="2">Floor 2</option>
+                <option value="3">Floor 3</option>
               </select>
             </div>
             <div>

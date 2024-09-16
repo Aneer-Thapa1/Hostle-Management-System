@@ -27,7 +27,7 @@ const signup = async (req, res) => {
   try {
     // Check if the user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { userEmail },
+      where: { email: userEmail },
     });
 
     if (existingUser) {
@@ -43,8 +43,8 @@ const signup = async (req, res) => {
       data: {
         userAddress,
         userContact,
-        userEmail,
-        userName,
+        email: userEmail,
+        name: userName,
         userPassword: hashedPassword,
       },
     });
@@ -77,10 +77,12 @@ const login = async (req, res) => {
       .json({ success: false, message: "Email and password are required" });
   }
 
+  console.log(email);
+
   try {
     // Attempt to find the user by email in the 'user' model
     let user = await prisma.user.findUnique({
-      where: { userEmail: email },
+      where: { email: email },
     });
 
     let role = "user";

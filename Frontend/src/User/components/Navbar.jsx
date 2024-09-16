@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const loggedOutNavList = ["Find a Hostel", "Rental Guides", "Share Stories"];
-  const loggedInNavList = ["Dashboard", "My Bookings", "Messages", "Profile"];
+  const loggedInNavList = ["Home", "Hostels", "My Bookings", "Messages"];
 
   useEffect(() => {
     const checkAuth = () => {
@@ -18,6 +19,20 @@ const Navbar = () => {
   }, []);
 
   const currentNavList = isLoggedIn ? loggedInNavList : loggedOutNavList;
+
+  const handleLogout = () => {
+    // Clear all items from localStorage
+    localStorage.clear();
+
+    // Update state
+    setIsLoggedIn(false);
+
+    // Close mobile menu if open
+    setIsMobileMenuOpen(false);
+
+    // Redirect to home page
+    navigate("/");
+  };
 
   return (
     <nav className="flex flex-wrap justify-between items-center w-screen h-24 px-4 py-4 z-30">
@@ -43,11 +58,7 @@ const Navbar = () => {
       <div className="hidden lg:flex gap-3">
         {isLoggedIn ? (
           <button
-            onClick={() => {
-              // Add logout logic here
-              setIsLoggedIn(false);
-              localStorage.removeItem("userToken");
-            }}
+            onClick={handleLogout}
             className="border-2 border-primaryColor rounded-3xl px-6 py-3 text-white font-semibold cursor-pointer"
           >
             Logout
@@ -93,11 +104,7 @@ const Navbar = () => {
           <div className="flex flex-col gap-3 mt-4">
             {isLoggedIn ? (
               <button
-                onClick={() => {
-                  setIsLoggedIn(false);
-                  localStorage.removeItem("userToken");
-                  setIsMobileMenuOpen(false);
-                }}
+                onClick={handleLogout}
                 className="border-2 border-primaryColor rounded-3xl px-6 py-3 text-white font-semibold cursor-pointer"
               >
                 Logout
