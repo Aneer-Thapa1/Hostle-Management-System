@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 import hms from "../../assets/Admin/hms.png";
 import {
   IoHomeOutline,
@@ -14,7 +16,7 @@ import AdminDashboard from "../AdminComponent/AdminDashboard";
 import AdminFrontDesk from "../AdminComponent/AdminFrontDesk";
 import AdminGuest from "../AdminComponent/AdminGuest";
 import AdminRoom from "../AdminComponent/AdminRoom";
-import AdminBookings from "../AdminComponent/AdminBookings"; // New import
+import AdminBookings from "../AdminComponent/AdminBookings";
 import AdminDeal from "../AdminComponent/AdminDeal";
 import AddHostel from "../AdminComponent/ComponentModels/AddRoom";
 
@@ -22,6 +24,7 @@ const AdminPage = () => {
   const [active, setActive] = useState("dashboard");
   const [openModel, setModel] = useState(false);
   const [editData, setEditData] = useState();
+  const navigate = useNavigate();
 
   const handleClick = (e, act) => {
     setActive(act);
@@ -29,11 +32,19 @@ const AdminPage = () => {
   };
 
   const handleLogout = () => {
-    // Implement logout logic here
-    console.log("Logout clicked");
-    // For example:
-    // logout();
-    // navigate('/login');
+    // Clear all cookies
+    Object.keys(Cookies.get()).forEach((cookieName) => {
+      Cookies.remove(cookieName);
+    });
+
+    // Clear localStorage
+    localStorage.clear();
+
+    // Clear sessionStorage
+    sessionStorage.clear();
+
+    // Redirect to home page
+    navigate("/");
   };
 
   return (

@@ -1,39 +1,40 @@
 const jwt = require("jsonwebtoken");
 
 const auth = (req, res, next) => {
-  // Get token from the header
-  const authHeader = req.header("Authorization");
+  // Get the authorization header
+  const authHeader = req.headers.authorization;
 
-  // Check if auth header is not provided
   if (!authHeader) {
-    return res
-      .status(401)
-      .json({ message: "No authorization header, authentication denied" });
+    return res.status(401).json({ message: "Authorization header is missing" });
   }
 
-  // Check if the auth header starts with "Bearer "
+  // Check if the header starts with 'Bearer '
   if (!authHeader.startsWith("Bearer ")) {
-    return res
-      .status(401)
-      .json({ message: "Invalid token format, must start with 'Bearer'" });
+    return res.status(401).json({ message: "Invalid token format" });
   }
 
-  // Extract the token (remove "Bearer " from the beginning)
-  const token = authHeader.slice(7);
+  // Extract the token (everything after 'Bearer ')
+  const token = authHeader.substring(7);
+
+  if (!token) {
+    return res.status(401).json({ message: "Token is missing" });
+  }
 
   try {
     // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Use your secret key
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach the decoded user to the request object
-    req.user = decoded.user;
+    // Attach the decoded user information to the request
+    req.user = decoded;
 
-    // Move to the next middleware or route handler
+    // Proceed to the next middleware
     next();
-  } catch (err) {
-    console.error("Token verification error:", err);
-    // If token verification fails
-    res.status(401).json({ message: "Token is not valid" });
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Token has expired" });
+    }
+
+    return res.status(403).json({ message: "Invalid token" });
   }
 };
 
