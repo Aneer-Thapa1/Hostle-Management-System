@@ -11,4 +11,6 @@ router.get("/hostels", hostelController.getHostels);
 
 router.get("/nearby", hostelController.getNearbyHostels);
 
+router.get("/all-hostels", hostelController.allHostels);
+
 module.exports = router;

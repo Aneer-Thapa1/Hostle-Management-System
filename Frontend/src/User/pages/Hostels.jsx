@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import InfiniteScroll from "react-infinite-scroll-component";
@@ -10,13 +10,51 @@ import {
   FaStar,
   FaFilter,
 } from "react-icons/fa";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 const baseURL = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
+// Custom marker icons
+const customIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
+const userIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
+// Component to fit map bounds
+function FitBoundsToMarkers({ markers, userLocation }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (markers.length > 0) {
+      const bounds = L.latLngBounds(
+        markers.map((marker) => [marker.latitude, marker.longitude])
+      );
+      if (userLocation) {
+        bounds.extend(userLocation);
+      }
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [markers, userLocation]);
+
+  return null;
+}
+
 const Hostels = () => {
-  const [hostels, setHostels] = useState([]);
+  const [allHostels, setAllHostels] = useState([]);
+  const [displayedHostels, setDisplayedHostels] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -27,13 +65,29 @@ const Hostels = () => {
     location: "",
     maxPrice: "",
   });
+  const [userLocation, setUserLocation] = useState(null);
+  const mapRef = useRef(null);
 
   const getAuthHeader = () => {
     const token = localStorage.getItem("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  const fetchHostels = useCallback(
+  const fetchAllHostels = useCallback(async () => {
+    try {
+      const response = await axios.get(`${baseURL}/api/hostel/all-hostels`, {
+        headers: getAuthHeader(),
+      });
+
+      console.log(response);
+      setAllHostels(response.data.hostels);
+    } catch (error) {
+      console.log(error);
+      console.error("Error fetching all hostels:", error);
+    }
+  }, []);
+
+  const fetchDisplayedHostels = useCallback(
     async (reset = false) => {
       try {
         const response = await axios.get(`${baseURL}/api/hostel/hostels`, {
@@ -46,11 +100,13 @@ const Hostels = () => {
           headers: getAuthHeader(),
         });
         const newHostels = response.data.hostels;
-        setHostels((prev) => (reset ? newHostels : [...prev, ...newHostels]));
+        setDisplayedHostels((prev) =>
+          reset ? newHostels : [...prev, ...newHostels]
+        );
         setHasMore(page < response.data.totalPages);
         setPage((prev) => (reset ? 2 : prev + 1));
       } catch (error) {
-        console.error("Error fetching hostels:", error);
+        console.error("Error fetching displayed hostels:", error);
       }
     },
     [page, searchQuery, filters]
@@ -71,12 +127,28 @@ const Hostels = () => {
   }, []);
 
   useEffect(() => {
-    fetchHostels(true);
+    fetchAllHostels();
+    fetchDisplayedHostels(true);
     fetchFavorites();
+
+    // Get user's location
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation([latitude, longitude]);
+      },
+      (error) => {
+        console.error("Error getting user location:", error);
+      }
+    );
+  }, []);
+
+  useEffect(() => {
+    fetchDisplayedHostels(true);
   }, [searchQuery, filters]);
 
   const handleSearch = () => {
-    fetchHostels(true);
+    fetchDisplayedHostels(true);
   };
 
   const handleFilterChange = (e) => {
@@ -85,7 +157,7 @@ const Hostels = () => {
   };
 
   const applyFilters = () => {
-    fetchHostels(true);
+    fetchDisplayedHostels(true);
     setFilterOpen(false);
   };
 
@@ -107,7 +179,6 @@ const Hostels = () => {
         data: { hostelId },
       });
 
-      // Update the favorites state
       setFavorites((prev) =>
         isFavorite ? prev.filter((id) => id !== hostelId) : [...prev, hostelId]
       );
@@ -121,6 +192,51 @@ const Hostels = () => {
       <Navbar />
 
       <main className="container mx-auto px-4 py-8">
+        {/* Map Section */}
+        <section className="mb-16">
+          <h2 className="text-3xl font-bold mb-4">Hostel Locations</h2>
+          <div style={{ height: "400px", width: "100%" }}>
+            <MapContainer
+              center={[0, 0]}
+              zoom={2}
+              style={{ height: "100%", width: "100%" }}
+              ref={mapRef}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              {allHostels.map((hostel) =>
+                hostel.latitude && hostel.longitude ? (
+                  <Marker
+                    key={hostel.id}
+                    position={[hostel.latitude, hostel.longitude]}
+                    icon={customIcon}
+                  >
+                    <Popup>
+                      <div>
+                        <h3>{hostel.name}</h3>
+                        <p>{hostel.location}</p>
+                        <p>Price: Rs{hostel.price}</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ) : null
+              )}
+              {userLocation && (
+                <Marker position={userLocation} icon={userIcon}>
+                  <Popup>You are here</Popup>
+                </Marker>
+              )}
+              <FitBoundsToMarkers
+                markers={allHostels}
+                userLocation={userLocation}
+              />
+            </MapContainer>
+          </div>
+        </section>
+
+        {/* Search Section */}
         <section className="mb-16 text-center relative">
           <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-10"></div>
           <h1 className="text-5xl md:text-7xl font-bold mb-4 relative z-10">
@@ -146,17 +262,7 @@ const Hostels = () => {
                   />
                 </div>
               </div>
-              <div className="w-full md:w-48">
-                <div className="relative">
-                  <FaRegCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="date"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryColor text-white"
-                    value={checkInDate}
-                    onChange={(e) => setCheckInDate(e.target.value)}
-                  />
-                </div>
-              </div>
+
               <button
                 className="bg-primaryColor text-white px-6 py-3 rounded-lg hover:bg-primaryColor-dark transition duration-300 transform hover:scale-105"
                 onClick={handleSearch}
@@ -167,6 +273,7 @@ const Hostels = () => {
           </div>
         </section>
 
+        {/* Hostels List Section */}
         <section className="mb-16">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold">Available Hostels</h2>
@@ -210,13 +317,13 @@ const Hostels = () => {
           )}
 
           <InfiniteScroll
-            dataLength={hostels.length}
-            next={fetchHostels}
+            dataLength={displayedHostels.length}
+            next={fetchDisplayedHostels}
             hasMore={hasMore}
             loader={<h4>Loading...</h4>}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
-            {hostels.map((hostel) => (
+            {displayedHostels.map((hostel) => (
               <HostelCard
                 key={hostel.id}
                 hostel={hostel}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "react-query";
+import { useQuery, useMutation, useQueryClient } from "react-query";
 import axios from "axios";
 import { CiEdit } from "react-icons/ci";
 import { MdDeleteOutline } from "react-icons/md";
@@ -22,30 +22,34 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-const ROWS_PER_PAGE = 10;
+const ROWS_PER_PAGE = 8;
 
 const fetchDeals = async ({ queryKey }) => {
   const [_key, { page, limit, sortBy, sortOrder, roomType }] = queryKey;
   const endpoint = "/api/deals/getDeals";
 
   const params = { page, limit, sortBy, sortOrder };
-  if (roomType && roomType !== "allRooms") {
+  if (roomType && roomType !== "all") {
     params.roomType = roomType;
   }
 
-  console.log("Fetching deals with params:", params);
   const response = await axiosInstance.get(endpoint, { params });
-  console.log("API response:", response.data);
   return response.data;
+};
+
+const deleteDeal = async (dealId) => {
+  await axiosInstance.delete(`/api/deals/deleteDeal/${dealId}`);
 };
 
 const AdminDeal = () => {
   const [showAddDeal, setShowAddDeal] = useState(false);
   const [editDealData, setEditDealData] = useState(null);
-  const [selectedRoomType, setSelectedRoomType] = useState("allRooms");
+  const [selectedRoomType, setSelectedRoomType] = useState("all");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
+
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError, error, refetch } = useQuery(
     [
@@ -59,44 +63,61 @@ const AdminDeal = () => {
       },
     ],
     fetchDeals,
-    {
-      keepPreviousData: true,
-      staleTime: 5000,
-      onSuccess: (data) => {
-        console.log("Query succeeded. Received data:", data);
-      },
-      onError: (error) => {
-        console.error("Query failed:", error);
-      },
-    }
+    { keepPreviousData: true, staleTime: 5000 }
   );
+
+  const deleteMutation = useMutation(deleteDeal, {
+    onSuccess: () => {
+      queryClient.invalidateQueries("deals");
+    },
+  });
 
   const openAddDealForm = () => {
     setEditDealData(null);
     setShowAddDeal(true);
   };
 
-  const editDeal = (deal) => {
-    setEditDealData(deal);
+  const editDeal = (dealData) => {
+    setEditDealData(dealData);
     setShowAddDeal(true);
   };
 
   const handleRoomTypeChange = (roomType) => {
-    console.log("Room type changed to:", roomType);
     setSelectedRoomType(roomType);
     setPage(1);
     refetch();
   };
 
+  const handleDelete = (dealId) => {
+    if (window.confirm("Are you sure you want to delete this deal?")) {
+      deleteMutation.mutate(dealId);
+    }
+  };
+
+  const renderFacilities = (facilities) => {
+    if (!facilities) return "No facilities";
+    if (typeof facilities === "string") {
+      try {
+        facilities = JSON.parse(facilities);
+      } catch (e) {
+        return facilities;
+      }
+    }
+    if (Array.isArray(facilities)) {
+      return facilities.join(", ");
+    }
+    return String(facilities);
+  };
+
   if (isLoading)
     return (
-      <div className="w-full h-screen flex items-center justify-center">
+      <div className="w-full h-full flex items-center justify-center">
         Loading...
       </div>
     );
   if (isError)
     return (
-      <div className="w-full h-screen flex items-center justify-center text-red-500">
+      <div className="w-full h-full flex items-center justify-center text-red-500">
         Error: {error.message}
       </div>
     );
@@ -105,140 +126,134 @@ const AdminDeal = () => {
   const totalItems = data?.meta?.totalItems || 0;
   const totalPages = Math.ceil(totalItems / ROWS_PER_PAGE);
 
-  const filledDeals = [...deals];
-  while (filledDeals.length < ROWS_PER_PAGE) {
-    filledDeals.push({ id: `empty-${filledDeals.length}`, isEmpty: true });
-  }
+  const filledDeals = [
+    ...deals,
+    ...Array(ROWS_PER_PAGE - deals.length).fill({ isEmpty: true }),
+  ];
 
   return (
-    <div className="w-full h-screen flex flex-col">
-      <h1 className="text-[#636363] font-medium mb-3">Deals</h1>
+    <div className="w-full h-full flex flex-col bg-gray-100 p-4">
+      <div className="bg-white rounded-lg shadow-md p-4 flex-grow flex flex-col">
+        <h1 className="text-xl font-bold text-gray-800 mb-4">
+          Deal Management
+        </h1>
 
-      {/* Room Type Filters */}
-      <div className="flex gap-3 mb-3 text-sm">
-        <div className="flex gap-3 flex-grow">
-          {["allRooms", "Single Bed", "Double Bed", "Suite"].map((roomType) => (
-            <div
-              key={roomType}
-              onClick={() => handleRoomTypeChange(roomType)}
-              className={`px-3 py-2 flex gap-1 ${
-                selectedRoomType === roomType
-                  ? "border-[1px] border-blue-500 bg-blue-100 text-blue-500"
-                  : "border-[1px] border-[#636363] text-[#636363]"
-              } rounded-full font-medium cursor-pointer active:scale-90 transition-bg duration-300`}
-            >
-              <span>{roomType === "allRooms" ? "All Rooms" : roomType}</span>
-              <span>
-                ({roomType === selectedRoomType ? totalItems : "..."})
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* ADD DEAL BUTTON */}
-        <button
-          onClick={openAddDealForm}
-          className="bg-blue-500 text-white font-medium rounded-md px-3 py-1 active:scale-95 transition-all ease-in-out"
-        >
-          Add Deal
-        </button>
-      </div>
-
-      {/* TABLE */}
-      <div className="flex-grow border-[1px] border-blue-100 rounded-md overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-blue-50">
-            <tr>
-              <th className="font-medium text-left pl-4 py-2 text-[#636363]">
-                Deal Name
-              </th>
-              <th className="font-medium text-left pl-4 py-2 text-[#636363]">
-                Room Type
-              </th>
-              <th className="font-medium text-left pl-4 py-2 text-[#636363]">
-                Discount
-              </th>
-              <th className="font-medium text-left pl-4 py-2 text-[#636363]">
-                Start Date
-              </th>
-              <th className="font-medium text-left pl-4 py-2 text-[#636363]">
-                End Date
-              </th>
-              <th className="font-medium text-left pl-4 py-2 text-[#636363]">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white">
-            {filledDeals.map((deal) => (
-              <tr
-                key={deal.id}
-                className={`border-t border-blue-100 ${
-                  deal.isEmpty ? "h-[43px]" : ""
+        <div className="flex flex-wrap justify-between items-center mb-4">
+          <div className="flex flex-wrap gap-2 mb-2 sm:mb-0">
+            {["all", "Single", "Double", "Triple", "Quad"].map((roomType) => (
+              <button
+                key={roomType}
+                onClick={() => handleRoomTypeChange(roomType)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                  selectedRoomType === roomType
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
-                {!deal.isEmpty ? (
-                  <>
-                    <td className="pl-4 py-2 text-blue-600">{deal.name}</td>
-                    <td className="pl-4 py-2 text-[#636363]">
-                      {deal.roomType}
-                    </td>
-                    <td className="pl-4 py-2 text-[#636363]">
-                      {deal.discount}%
-                    </td>
-                    <td className="pl-4 py-2 text-[#636363]">
-                      {new Date(deal.startDate).toLocaleDateString()}
-                    </td>
-                    <td className="pl-4 py-2 text-[#636363]">
-                      {new Date(deal.endDate).toLocaleDateString()}
-                    </td>
-                    <td className="pl-4 py-2">
-                      <div className="flex gap-4">
-                        <CiEdit
-                          onClick={() => editDeal(deal)}
-                          className="w-6 h-6 cursor-pointer text-blue-500 hover:text-blue-700"
-                        />
-                        <MdDeleteOutline className="w-6 h-6 cursor-pointer text-red-500 hover:text-red-700" />
-                      </div>
-                    </td>
-                  </>
-                ) : (
-                  <td colSpan="6"></td>
-                )}
-              </tr>
+                {roomType === "all" ? "All Deals" : `${roomType} Room`}
+              </button>
             ))}
-          </tbody>
-        </table>
+          </div>
+          <button
+            onClick={openAddDealForm}
+            className="bg-green-500 text-white text-sm font-medium rounded-md px-3 py-1 hover:bg-green-600 transition-colors duration-200"
+          >
+            Add New Deal
+          </button>
+        </div>
+
+        <div className="flex-grow overflow-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                {[
+                  "Deal Name",
+                  "Room Type",
+                  "Price (Monthly)",
+                  "Facilities",
+                  "Actions",
+                ].map((header) => (
+                  <th
+                    key={header}
+                    scope="col"
+                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filledDeals.map((deal, index) => (
+                <tr
+                  key={deal.id || `empty-${index}`}
+                  className={deal.isEmpty ? "h-12" : ""}
+                >
+                  {!deal.isEmpty ? (
+                    <>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        {deal.name}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                        {deal.roomType}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                        ${deal.monthlyPrice}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                        {renderFacilities(deal.facilities)}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => editDeal(deal)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-2"
+                        >
+                          <CiEdit className="w-4 h-4 inline" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(deal.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <MdDeleteOutline className="w-4 h-4 inline" />
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <td colSpan="5"></td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-sm text-gray-700">
+            Showing {Math.min((page - 1) * ROWS_PER_PAGE + 1, totalItems)} to{" "}
+            {Math.min(page * ROWS_PER_PAGE, totalItems)} of {totalItems} results
+          </p>
+          <div className="flex items-center">
+            <button
+              onClick={() => setPage((old) => Math.max(old - 1, 1))}
+              disabled={page === 1}
+              className="mr-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((old) => Math.min(old + 1, totalPages))}
+              disabled={page === totalPages}
+              className="ml-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Pagination */}
-      <div className="flex justify-between items-center mt-4">
-        <button
-          onClick={() => {
-            setPage((old) => Math.max(old - 1, 1));
-            refetch();
-          }}
-          disabled={page === 1}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
-        >
-          Previous
-        </button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <button
-          onClick={() => {
-            setPage((old) => Math.min(old + 1, totalPages));
-            refetch();
-          }}
-          disabled={page === totalPages}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
-        >
-          Next
-        </button>
-      </div>
-
-      {/* AddDeal Modal */}
       {showAddDeal && (
         <AddDeal
           setModel={setShowAddDeal}

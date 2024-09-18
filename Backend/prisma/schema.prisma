@@ -11,37 +11,41 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   name      String
-  email     String    @unique
+  email     String     @unique
   password  String
-  role      String    @default("user") // "user", "hostel_owner", "admin"
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  address   String
+  contact   String
+  role      String     @default("user")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   bookings  Booking[]
   ratings   Rating[]
+  favorites Favorite[]
 }
 
 model HostelOwner {
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   hostelName  String
   ownerName   String
-  email       String    @unique
+  email       String     @unique
   contact     String
   password    String
   location    String
   address     String
   latitude    Float
   longitude   Float
-  description String    @db.Text
+  description String     @db.Text
   mainPhoto   String
-  avgRating   Float     @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  avgRating   Float      @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   rooms       Room[]
   deals       Deal[]
   bookings    Booking[]
   ratings     Rating[]
+  favorites   Favorite[]
 }
 
 model Room {
@@ -58,23 +62,31 @@ model Room {
   dateAvailable  DateTime
   hostelOwnerId  Int
   hostelOwner    HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  deals          Deal[] // New: A room can be associated with multiple deals
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 }
 
 model Deal {
-  id            Int         @id @default(autoincrement())
-  name          String
-  roomType      String
-  discount      Float
-  startDate     DateTime
-  endDate       DateTime
-  description   String      @db.Text
-  hostelOwnerId Int
-  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  bookings      Booking[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                 Int         @id @default(autoincrement())
+  name               String
+  description        String      @db.Text
+  packageType        String // e.g., "Weekly", "Monthly", "Student", "Holiday"
+  basePrice          Float // Regular price without discount
+  discountPrice      Float? // Optional discounted price
+  maxOccupancy       Int // Maximum number of guests for this deal
+  amenities          String      @db.Text // Store as JSON string
+  features           String      @db.Text // Store as JSON string
+  startDate          DateTime? // Optional start date for seasonal or limited-time deals
+  endDate            DateTime? // Optional end date for seasonal or limited-time deals
+  isActive           Boolean     @default(true)
+  termsAndConditions String      @db.Text
+  hostelOwnerId      Int
+  hostelOwner        HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  rooms              Room[] // New: A deal can be associated with multiple rooms
+  bookings           Booking[]
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 }
 
 model Booking {
@@ -103,4 +115,16 @@ model Rating {
   hostel    HostelOwner @relation(fields: [hostelId], references: [id])
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+}
+
+model Favorite {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  hostelId  Int
+  hostel    HostelOwner @relation(fields: [hostelId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([userId, hostelId])
 }
