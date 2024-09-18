@@ -11,13 +11,13 @@ import {
 
 const Footer = () => {
   return (
-    <footer className="bg-black text-white py-12 px-4 sm:px-6 lg:px-8">
+    <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <div className="flex flex-col items-start">
           <h2 className="text-2xl font-bold mb-4">HostelEase</h2>
           <p className="text-gray-400 mb-4">
-            Your home away from home. Experience affordable and comfortable
-            stays in our vibrant hostel community.
+            Simplifying hostel management and bookings. Connect with travelers
+            and manage your hostel with ease.
           </p>
           <div className="flex space-x-4">
             <Facebook className="w-6 h-6 text-primaryColor hover:text-white transition-colors cursor-pointer" />
@@ -29,16 +29,16 @@ const Footer = () => {
 
         <div>
           <h3 className="text-xl font-semibold mb-4 text-primaryColor">
-            Quick Links
+            For Travelers
           </h3>
           <ul className="space-y-2">
             {[
-              "Home",
-              "About Us",
-              "Rooms",
-              "Facilities",
-              "Events",
-              "Contact",
+              "Find Hostels",
+              "Book a Bed",
+              "Long-term Stays",
+              "Group Bookings",
+              "Travel Tips",
+              "Community Events",
             ].map((item) => (
               <li key={item}>
                 <a
@@ -54,16 +54,16 @@ const Footer = () => {
 
         <div>
           <h3 className="text-xl font-semibold mb-4 text-primaryColor">
-            Our Services
+            For Hostel Owners
           </h3>
           <ul className="space-y-2">
             {[
-              "Dormitory Beds",
-              "Private Rooms",
-              "Long-term Stays",
-              "Group Bookings",
-              "Airport Transfers",
-              "Bike Rentals",
+              "List Your Hostel",
+              "Manage Bookings",
+              "Pricing Strategies",
+              "Hostel Management Tools",
+              "Owner Community",
+              "Marketing Tips",
             ].map((item) => (
               <li key={item}>
                 <a
@@ -85,10 +85,10 @@ const Footer = () => {
             <li className="flex items-center">
               <Mail className="w-5 h-5 mr-2 text-primaryColor" />
               <a
-                href="mailto:info@hostelhub.com"
+                href="mailto:support@hostelease.com"
                 className="text-gray-400 hover:text-primaryColor transition-colors"
               >
-                info@hostelhub.com
+                support@hostelease.com
               </a>
             </li>
             <li className="flex items-center">
@@ -103,7 +103,7 @@ const Footer = () => {
             <li className="flex items-center">
               <MapPin className="w-5 h-5 mr-2 text-primaryColor" />
               <span className="text-gray-400">
-                123 Backpacker St, Traveler City, TC 12345
+                456 Backpacker Ave, Hostel Hub, HH 67890
               </span>
             </li>
           </ul>
@@ -113,10 +113,10 @@ const Footer = () => {
       <div className="mt-12 pt-8 border-t border-gray-800">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm mb-4 md:mb-0">
-            &copy; 2024 HostelHub. All rights reserved.
+            &copy; 2024 HostelEase. All rights reserved.
           </p>
           <div className="flex space-x-4">
-            {["Privacy Policy", "Terms of Service", "House Rules"].map(
+            {["Privacy Policy", "Terms of Service", "Community Guidelines"].map(
               (item) => (
                 <a
                   key={item}

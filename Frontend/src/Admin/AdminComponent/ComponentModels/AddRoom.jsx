@@ -6,46 +6,28 @@ import { useNavigate } from "react-router-dom";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH;
 
-console.log("API URL:", apiUrl);
-
 const axiosInstance = axios.create({
   baseURL: apiUrl,
 });
 
-console.log(apiUrl);
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-    console.log("Outgoing Request Config:", config);
     return config;
   },
-  (error) => {
-    console.error("Request Error:", error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-axiosInstance.interceptors.response.use(
-  (response) => {
-    console.log("Response Data:", response.data);
-    return response;
-  },
-  (error) => {
-    console.error("Response Error:", error.response || error);
-    return Promise.reject(error);
-  }
-);
-
-const AddRoom = ({ setModel, editData }) => {
+const AddRoom = ({ setModel, editData, refetchRooms }) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [roomData, setRoomData] = useState({
     roomIdentifier: "",
     type: "Double Bed",
-    floor: "Floor 1",
+    floor: "1",
     amenities: [],
     status: "Available",
     capacity: "",
@@ -53,53 +35,6 @@ const AddRoom = ({ setModel, editData }) => {
     price: "",
   });
   const [error, setError] = useState(null);
-
-  const addRoomMutation = useMutation(
-    (newRoom) => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      return axiosInstance.post("/api/rooms/addRoom", newRoom);
-    },
-    {
-      onSuccess: (data) => {
-        console.log("Room added successfully:", data);
-        queryClient.invalidateQueries("rooms");
-        setModel(false);
-      },
-      onError: (error) => {
-        console.error("Error adding room:", error);
-        handleError(error);
-      },
-    }
-  );
-
-  const updateRoomMutation = useMutation(
-    (updatedRoom) => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      console.log(updatedRoom);
-      return axiosInstance.put(
-        `/api/rooms/updateRoom/${updatedRoom.id}`,
-        updatedRoom
-      );
-    },
-    {
-      onSuccess: (data) => {
-        console.log("Room updated successfully:", data);
-        queryClient.invalidateQueries("rooms");
-        setModel(false);
-      },
-      onError: (error) => {
-        console.error("Error updating room:", error);
-        handleError(error);
-      },
-    }
-  );
 
   useEffect(() => {
     if (editData) {
@@ -111,6 +46,30 @@ const AddRoom = ({ setModel, editData }) => {
       });
     }
   }, [editData]);
+
+  const mutation = useMutation(
+    (roomData) => {
+      if (editData) {
+        return axiosInstance.put(
+          `/api/rooms/updateRoom/${editData.id}`,
+          roomData
+        );
+      } else {
+        return axiosInstance.post("/api/rooms/addRoom", roomData);
+      }
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("rooms");
+        refetchRooms();
+        setModel(false);
+      },
+      onError: (error) => {
+        console.error("Error in room operation:", error);
+        handleError(error);
+      },
+    }
+  );
 
   const handleError = (error) => {
     if (error.response && error.response.status === 401) {
@@ -132,11 +91,7 @@ const AddRoom = ({ setModel, editData }) => {
         ...roomData,
         amenities: JSON.stringify(roomData.amenities),
       };
-      if (editData) {
-        await updateRoomMutation.mutateAsync(dataToSubmit);
-      } else {
-        await addRoomMutation.mutateAsync(dataToSubmit);
-      }
+      await mutation.mutateAsync(dataToSubmit);
     } catch (error) {
       console.error("Mutation error:", error);
     }
@@ -341,11 +296,9 @@ const AddRoom = ({ setModel, editData }) => {
             <button
               type="submit"
               className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300"
-              disabled={
-                addRoomMutation.isLoading || updateRoomMutation.isLoading
-              }
+              disabled={mutation.isLoading}
             >
-              {addRoomMutation.isLoading || updateRoomMutation.isLoading
+              {mutation.isLoading
                 ? "Processing..."
                 : editData
                 ? "Update Room"

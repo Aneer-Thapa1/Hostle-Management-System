@@ -4,15 +4,15 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const signup = async (req, res) => {
-  const { userAddress, userContact, userEmail, userName, userPassword } =
+  const { userName, userEmail, userContact, userAddress, userPassword } =
     req.body;
 
   // Validate required fields
   if (
-    !userAddress ||
-    !userContact ||
-    !userEmail ||
     !userName ||
+    !userEmail ||
+    !userContact ||
+    !userAddress ||
     !userPassword
   ) {
     return res.status(400).json({ error: "All fields are required" });
@@ -41,16 +41,17 @@ const signup = async (req, res) => {
     // Create a new user
     const newUser = await prisma.user.create({
       data: {
-        userAddress,
-        userContact,
-        email: userEmail,
         name: userName,
-        userPassword: hashedPassword,
+        email: userEmail,
+        contact: userContact,
+        address: userAddress,
+        password: hashedPassword,
+        role: "user",
       },
     });
 
     // Remove password from the response
-    const { userPassword: _, ...userWithoutPassword } = newUser;
+    const { password: _, ...userWithoutPassword } = newUser;
 
     res.status(201).json({
       message: "User registered successfully",
@@ -58,11 +59,9 @@ const signup = async (req, res) => {
     });
   } catch (error) {
     console.error("Signup error:", error);
-
-    if (error.code === "P2002" && error.meta?.target?.includes("userEmail")) {
+    if (error.code === "P2002" && error.meta?.target?.includes("email")) {
       return res.status(409).json({ error: "Email already in use" });
     }
-
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -103,10 +102,7 @@ const login = async (req, res) => {
     }
 
     // Compare the password
-    const isMatch = await bcrypt.compare(
-      password,
-      role === "user" ? user.userPassword : user.password
-    );
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res

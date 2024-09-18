@@ -86,7 +86,10 @@ const setFavorite = async (req, res) => {
           },
         },
       });
-      res.json({ message: "Favorite removed successfully", isFavorite: false });
+      res.json({
+        message: "Favorite removed successfully",
+        isFavorite: false,
+      });
     } else {
       // If it doesn't exist, create it (toggle on)
       await prisma.favorite.create({

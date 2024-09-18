@@ -9,7 +9,7 @@ const getHostel = async (req, res) => {
     const hostelData = await prisma.hostelOwner.findUnique({
       where: { id: hostelId },
       include: {
-        Room: {
+        rooms: {
           select: {
             id: true,
             roomIdentifier: true,
@@ -24,15 +24,21 @@ const getHostel = async (req, res) => {
             dateAvailable: true,
           },
         },
-        Deal: {
+        deals: {
           select: {
             id: true,
             name: true,
-            roomType: true,
-            discount: true,
             startDate: true,
             endDate: true,
             description: true,
+            packageType: true,
+            basePrice: true,
+            discountPrice: true,
+            maxOccupancy: true,
+            amenities: true,
+            features: true,
+            isActive: true,
+            termsAndConditions: true,
           },
         },
       },
@@ -47,22 +53,22 @@ const getHostel = async (req, res) => {
     }
 
     // Parse amenities JSON string for each room
-    hostelData.Room = hostelData.Room.map((room) => ({
+    hostelData.rooms = hostelData.rooms.map((room) => ({
       ...room,
       amenities: room.amenities ? JSON.parse(room.amenities) : [],
     }));
 
     // Calculate minimum price from deals
     const minDealPrice =
-      hostelData.Deal.length > 0
-        ? Math.min(...hostelData.Deal.map((deal) => deal.discount))
+      hostelData.deals.length > 0
+        ? Math.min(...hostelData.deals.map((deal) => deal.discountPrice))
         : null;
 
     // Count number of rooms
-    const roomCount = hostelData.Room.length;
+    const roomCount = hostelData.rooms.length;
 
     // Count total capacity
-    const totalCapacity = hostelData.Room.reduce(
+    const totalCapacity = hostelData.rooms.reduce(
       (sum, room) => sum + room.capacity,
       0
     );
@@ -80,8 +86,8 @@ const getHostel = async (req, res) => {
       longitude: hostelData.longitude,
       description: hostelData.description,
       mainPhoto: hostelData.mainPhoto,
-      rooms: hostelData.Room,
-      deals: hostelData.Deal,
+      rooms: hostelData.rooms,
+      deals: hostelData.deals,
       minDealPrice: minDealPrice,
       roomCount: roomCount,
       totalCapacity: totalCapacity,
@@ -101,7 +107,6 @@ const getHostel = async (req, res) => {
     });
   }
 };
-
 const getHostels = async (req, res) => {
   try {
     const {
@@ -111,7 +116,7 @@ const getHostels = async (req, res) => {
       location = "",
       maxPrice,
     } = req.query;
-    const userId = req.user ? req.user.id : null; // Assuming you have user information in the request
+    const userId = req.user ? req.user.id : null;
 
     const pageNumber = parseInt(page);
     const pageSize = parseInt(limit);
@@ -133,7 +138,7 @@ const getHostels = async (req, res) => {
     }
 
     if (maxPrice) {
-      whereClause.Room = {
+      whereClause.rooms = {
         some: {
           price: { lte: parseFloat(maxPrice) },
         },
@@ -145,7 +150,7 @@ const getHostels = async (req, res) => {
       prisma.hostelOwner.findMany({
         where: whereClause,
         include: {
-          Room: {
+          rooms: {
             select: {
               price: true,
               amenities: true,
@@ -172,10 +177,12 @@ const getHostels = async (req, res) => {
       name: hostel.hostelName,
       location: hostel.location,
       description: hostel.description,
-      price: Math.min(...hostel.Room.map((room) => room.price)),
-      rating: hostel.rating || 0,
+      price: Math.min(...hostel.rooms.map((room) => room.price)),
+      rating: hostel.avgRating || 0,
       image: hostel.mainPhoto || "default_image_url",
-      amenities: [...new Set(hostel.Room.flatMap((room) => room.amenities))],
+      amenities: [
+        ...new Set(hostel.rooms.flatMap((room) => JSON.parse(room.amenities))),
+      ],
       isFavorite: favoriteHostelIds.has(hostel.id),
     }));
 
@@ -296,7 +303,6 @@ const getNearbyHostels = async (req, res) => {
         latitude, 
         longitude, 
         mainPhoto,
-      
         ST_Distance_Sphere(
           point(longitude, latitude),
           point(${lon}, ${lat})
@@ -304,8 +310,7 @@ const getNearbyHostels = async (req, res) => {
       FROM HostelOwner
       HAVING distance <= ${rad}
       ORDER BY distance
-      LIMIT ${lim} 
-      WHERE
+      LIMIT ${lim}
     `;
 
     if (nearbyHostels.length === 0) {
@@ -343,7 +348,6 @@ const getNearbyHostels = async (req, res) => {
       latitude: hostel.latitude,
       longitude: hostel.longitude,
       mainPhoto: hostel.mainPhoto,
-      // rating: hostel.rating,
       distance: Math.round(hostel.distance * 10) / 10, // Round to 1 decimal place
       minPrice: minPriceMap[hostel.id] || null,
     }));
@@ -363,8 +367,59 @@ const getNearbyHostels = async (req, res) => {
   }
 };
 
+const allHostels = async (req, res) => {
+  try {
+    const hostels = await prisma.hostelOwner.findMany({
+      select: {
+        id: true,
+        hostelName: true,
+        latitude: true,
+        longitude: true,
+        location: true,
+        address: true,
+        avgRating: true,
+        mainPhoto: true,
+        rooms: {
+          select: {
+            price: true,
+          },
+          orderBy: {
+            price: "asc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    const formattedHostels = hostels.map((hostel) => ({
+      id: hostel.id,
+      name: hostel.hostelName,
+      latitude: hostel.latitude,
+      longitude: hostel.longitude,
+      location: hostel.location,
+      address: hostel.address,
+      rating: hostel.avgRating || 0,
+      image: hostel.mainPhoto,
+      price: hostel.rooms[0]?.price || null,
+    }));
+
+    res.status(200).json({
+      status: "success",
+      results: formattedHostels.length,
+      hostels: formattedHostels,
+    });
+  } catch (error) {
+    console.error("Error fetching all hostels:", error);
+    res.status(500).json({
+      status: "error",
+      message: "An error occurred while fetching hostels",
+    });
+  }
+};
+
 module.exports = {
   getHostel,
   getHostels,
   getNearbyHostels,
+  allHostels,
 };

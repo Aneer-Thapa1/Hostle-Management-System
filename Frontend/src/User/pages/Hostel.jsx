@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "react-query";
+import { useQuery, useMutation } from "react-query";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { IoIosStarOutline, IoMdStar, IoMdClose } from "react-icons/io";
+
 import {
   FaMapMarkerAlt,
   FaExpand,
@@ -78,6 +79,13 @@ const fetchNearbyHostels = async ({ queryKey }) => {
 const Hostel = () => {
   const [selectedOption, setSelectedOption] = useState("Hostel Information");
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingInfo, setBookingInfo] = useState({
+    checkInDate: "",
+    checkOutDate: "",
+    numberOfGuests: 1,
+    specialRequests: "",
+  });
   const { id } = useParams();
 
   const {
@@ -105,6 +113,32 @@ const Hostel = () => {
       retry: 1,
     }
   );
+
+  const bookingMutation = useMutation(
+    (bookingData) =>
+      axiosInstance.post(`/api/booking/addBooking`, bookingData, {
+        headers: getAuthHeader(),
+      }),
+    {
+      onSuccess: () => {
+        alert("Booking successful!");
+        setIsBookingModalOpen(false);
+      },
+      onError: (error) => {
+        alert(
+          `Booking failed: ${error.response?.data?.message || error.message}`
+        );
+      },
+    }
+  );
+
+  const handleBookingSubmit = (e) => {
+    e.preventDefault();
+    bookingMutation.mutate({
+      hostelId: id,
+      ...bookingInfo,
+    });
+  };
 
   if (isLoading)
     return (
@@ -143,9 +177,8 @@ const Hostel = () => {
         return <HostelInformation hostelData={hostelData} />;
     }
   };
-
   const MapModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-75  flex justify-center items-center">
       <div className="bg-white w-11/12 h-5/6 rounded-lg p-4 relative">
         <button
           onClick={() => setIsMapModalOpen(false)}
@@ -171,6 +204,127 @@ const Hostel = () => {
       </div>
     </div>
   );
+
+  const BookingModal = ({ hostelData, onClose, onSubmit }) => {
+    const [bookingInfo, setBookingInfo] = useState({
+      dealId: "",
+      numberOfPersons: 1,
+      durationInMonths: 1,
+      specialRequests: "",
+    });
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      onSubmit(bookingInfo);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
+        <div className="bg-boxColor w-11/12 max-w-md rounded-lg p-6 relative">
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors duration-200"
+          >
+            <IoMdClose size={24} />
+          </button>
+          <h2 className="text-2xl font-bold text-white mb-4">Book Your Stay</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="dealId" className="block text-gray-300 mb-1">
+                Select Deal
+              </label>
+              <select
+                id="dealId"
+                value={bookingInfo.dealId}
+                onChange={(e) =>
+                  setBookingInfo({ ...bookingInfo, dealId: e.target.value })
+                }
+                className="w-full bg-gray-700 text-white rounded p-2"
+                required
+              >
+                <option value="">Select a deal</option>
+                {hostelData.deals.map((deal) => (
+                  <option key={deal.id} value={deal.id}>
+                    {deal.name} - Rs {deal.price}/month
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="numberOfPersons"
+                className="block text-gray-300 mb-1"
+              >
+                Number of Persons
+              </label>
+              <input
+                type="number"
+                id="numberOfPersons"
+                value={bookingInfo.numberOfPersons}
+                onChange={(e) =>
+                  setBookingInfo({
+                    ...bookingInfo,
+                    numberOfPersons: parseInt(e.target.value),
+                  })
+                }
+                min="1"
+                className="w-full bg-gray-700 text-white rounded p-2"
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="durationInMonths"
+                className="block text-gray-300 mb-1"
+              >
+                Duration (in months)
+              </label>
+              <input
+                type="number"
+                id="durationInMonths"
+                value={bookingInfo.durationInMonths}
+                onChange={(e) =>
+                  setBookingInfo({
+                    ...bookingInfo,
+                    durationInMonths: parseInt(e.target.value),
+                  })
+                }
+                min="1"
+                className="w-full bg-gray-700 text-white rounded p-2"
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="specialRequests"
+                className="block text-gray-300 mb-1"
+              >
+                Special Requests
+              </label>
+              <textarea
+                id="specialRequests"
+                value={bookingInfo.specialRequests}
+                onChange={(e) =>
+                  setBookingInfo({
+                    ...bookingInfo,
+                    specialRequests: e.target.value,
+                  })
+                }
+                className="w-full bg-gray-700 text-white rounded p-2"
+                rows="3"
+              ></textarea>
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-primaryColor text-white py-2 rounded hover:bg-primaryColor-dark transition-colors duration-200"
+            >
+              Confirm Booking
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  };
 
   const NearbyHostelCard = ({ hostel }) => (
     <div className="bg-boxColor rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl">
@@ -274,12 +428,15 @@ const Hostel = () => {
                     </p>
                   </div>
                 </div>
-                <button className="bg-primaryColor rounded-lg py-3 text-white font-medium hover:bg-primaryColor-dark transition-colors duration-200">
+                <button
+                  className="bg-primaryColor rounded-lg py-3 text-white font-medium hover:bg-primaryColor-dark transition-colors duration-200"
+                  onClick={() => setIsBookingModalOpen(true)}
+                >
                   Send Booking Request
                 </button>
               </div>
 
-              <div className="w-full h-64 rounded-lg overflow-hidden relative shadow-lg">
+              <div className="w-full h-64 rounded-lg overflow-hidden z-0 relative shadow-lg">
                 <MapContainer
                   center={[hostelData.latitude, hostelData.longitude]}
                   zoom={15}
@@ -361,6 +518,7 @@ const Hostel = () => {
 
       <Footer />
       {isMapModalOpen && <MapModal />}
+      {isBookingModalOpen && <BookingModal />}
     </div>
   );
 };

@@ -24,10 +24,9 @@ const AddDeal = ({ setModel, editData, refetchDeals }) => {
   const queryClient = useQueryClient();
   const [dealData, setDealData] = useState({
     name: "",
-    roomType: "Single Bed",
-    discount: "",
-    startDate: "",
-    endDate: "",
+    roomType: "Single",
+    monthlyPrice: "",
+    facilities: [],
     description: "",
   });
   const [error, setError] = useState(null);
@@ -36,8 +35,9 @@ const AddDeal = ({ setModel, editData, refetchDeals }) => {
     if (editData) {
       setDealData({
         ...editData,
-        startDate: editData.startDate.split("T")[0],
-        endDate: editData.endDate.split("T")[0],
+        facilities: Array.isArray(editData.facilities)
+          ? editData.facilities
+          : JSON.parse(editData.facilities || "[]"),
       });
     }
   }, [editData]);
@@ -85,10 +85,17 @@ const AddDeal = ({ setModel, editData, refetchDeals }) => {
     e.preventDefault();
     setError(null);
     try {
+      const submissionData = {
+        ...dealData,
+        facilities: JSON.stringify(dealData.facilities),
+      };
       if (editData) {
-        await updateDealMutation.mutateAsync({ ...dealData, id: editData.id });
+        await updateDealMutation.mutateAsync({
+          ...submissionData,
+          id: editData.id,
+        });
       } else {
-        await addDealMutation.mutateAsync(dealData);
+        await addDealMutation.mutateAsync(submissionData);
       }
     } catch (error) {
       console.error("Mutation error:", error);
@@ -98,6 +105,16 @@ const AddDeal = ({ setModel, editData, refetchDeals }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setDealData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFacilityChange = (e) => {
+    const { value, checked } = e.target;
+    setDealData((prev) => ({
+      ...prev,
+      facilities: checked
+        ? [...prev.facilities, value]
+        : prev.facilities.filter((f) => f !== value),
+    }));
   };
 
   return (
@@ -155,61 +172,58 @@ const AddDeal = ({ setModel, editData, refetchDeals }) => {
                 value={dealData.roomType}
                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="Single Bed">Single Bed</option>
-                <option value="Double Bed">Double Bed</option>
-                <option value="Suite">Suite</option>
+                <option value="Single">Single Room</option>
+                <option value="Double">Double Room</option>
+                <option value="Triple">Triple Room</option>
+                <option value="Quad">Quad Room</option>
               </select>
             </div>
             <div>
               <label
                 className="block text-sm font-medium text-gray-700 mb-1"
-                htmlFor="discount"
+                htmlFor="monthlyPrice"
               >
-                Discount (%)
+                Monthly Price
               </label>
               <input
                 onChange={handleChange}
                 required
                 type="number"
-                name="discount"
-                value={dealData.discount}
-                placeholder="Enter discount percentage"
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label
-                className="block text-sm font-medium text-gray-700 mb-1"
-                htmlFor="startDate"
-              >
-                Start Date
-              </label>
-              <input
-                onChange={handleChange}
-                required
-                type="date"
-                name="startDate"
-                value={dealData.startDate}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label
-                className="block text-sm font-medium text-gray-700 mb-1"
-                htmlFor="endDate"
-              >
-                End Date
-              </label>
-              <input
-                onChange={handleChange}
-                required
-                type="date"
-                name="endDate"
-                value={dealData.endDate}
+                name="monthlyPrice"
+                value={dealData.monthlyPrice}
+                placeholder="Enter monthly price"
                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Facilities
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                "Wi-Fi",
+                "TV",
+                "Air Conditioning",
+                "Mini-bar",
+                "Balcony",
+                "Room Service",
+              ].map((facility) => (
+                <label key={facility} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    value={facility}
+                    checked={dealData.facilities.includes(facility)}
+                    onChange={handleFacilityChange}
+                    className="form-checkbox h-5 w-5 text-blue-600"
+                  />
+                  <span className="ml-2 text-gray-700">{facility}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-4">
             <label
               className="block text-sm font-medium text-gray-700 mb-1"
@@ -226,6 +240,7 @@ const AddDeal = ({ setModel, editData, refetchDeals }) => {
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             ></textarea>
           </div>
+
           <div className="mt-6">
             <button
               type="submit"

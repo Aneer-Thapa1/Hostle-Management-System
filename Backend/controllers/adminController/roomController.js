@@ -32,13 +32,9 @@ const addRoom = async (req, res) => {
     });
   }
 
-  console.log(floor);
-
   try {
-    // Get the hostelOwnerId from the authenticated user
     const hostelOwnerId = req.user.user.id;
 
-    // Ensure the HostelOwner exists
     const existingHostelOwner = await prisma.hostelOwner.findUnique({
       where: { id: hostelOwnerId },
     });
@@ -47,13 +43,12 @@ const addRoom = async (req, res) => {
       return res.status(404).json({ error: "Hostel owner not found" });
     }
 
-    // Create the new room
     const newRoom = await prisma.room.create({
       data: {
         roomIdentifier,
         type,
         floor: parseInt(floor, 10),
-        amenities: JSON.stringify(amenities), // Store amenities as a JSON string
+        amenities: JSON.stringify(amenities),
         status: status || "available",
         capacity: parseInt(capacity, 10),
         description,
@@ -95,24 +90,18 @@ const getRooms = async (req, res) => {
     sortBy = "createdAt",
     sortOrder = "desc",
     status,
+    type,
+    minPrice,
+    maxPrice,
+    capacity,
   } = req.query;
-
-  console.log("Received query parameters:", {
-    page,
-    limit,
-    sortBy,
-    sortOrder,
-    status,
-  });
 
   try {
     if (roomId) {
-      // Fetch a single room if roomId is provided
       const room = await prisma.room.findUnique({
         where: { id: parseInt(roomId) },
         include: {
           hostelOwner: true,
-          bookings: true,
         },
       });
 
@@ -125,17 +114,16 @@ const getRooms = async (req, res) => {
         room,
       });
     } else {
-      // Fetch multiple rooms with pagination and filtering
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const take = parseInt(limit);
 
-      // Create a filter object
       const filter = {};
-      if (status && status !== "allRoom") {
-        filter.status = status;
-      }
-
-      console.log("Applied filter:", filter);
+      if (status && status !== "allRooms") filter.status = status;
+      if (type) filter.type = type;
+      if (minPrice) filter.price = { gte: parseFloat(minPrice) };
+      if (maxPrice)
+        filter.price = { ...filter.price, lte: parseFloat(maxPrice) };
+      if (capacity) filter.capacity = { gte: parseInt(capacity) };
 
       const [rooms, totalCount] = await prisma.$transaction([
         prisma.room.findMany({
@@ -151,8 +139,6 @@ const getRooms = async (req, res) => {
         }),
         prisma.room.count({ where: filter }),
       ]);
-
-      console.log(`Found ${rooms.length} rooms out of ${totalCount} total`);
 
       const totalPages = Math.ceil(totalCount / take);
 
@@ -196,10 +182,8 @@ const updateRoom = async (req, res) => {
   }
 
   try {
-    // Get the hostelOwnerId from the authenticated user
     const hostelOwnerId = req.user.id;
 
-    // Check if the room exists and belongs to the authenticated hostel owner
     const existingRoom = await prisma.room.findFirst({
       where: {
         id: parseInt(roomId),
@@ -211,20 +195,19 @@ const updateRoom = async (req, res) => {
       return res.status(404).json({ error: "Room not found or unauthorized" });
     }
 
-    // Prepare the update data
-    const updateData = {};
-    if (roomIdentifier) updateData.roomIdentifier = roomIdentifier;
-    if (type) updateData.type = type;
-    if (floor) updateData.floor = parseInt(floor, 10);
-    if (amenities) updateData.amenities = JSON.stringify(amenities);
-    if (status) updateData.status = status;
-    if (capacity) updateData.capacity = parseInt(capacity, 10);
-    if (description) updateData.description = description;
-    if (price) updateData.price = parseFloat(price);
-    if (dateAvailable) updateData.dateAvailable = new Date(dateAvailable);
-    if (roomCondition) updateData.roomCondition = roomCondition;
+    const updateData = {
+      ...(roomIdentifier && { roomIdentifier }),
+      ...(type && { type }),
+      ...(floor && { floor: parseInt(floor, 10) }),
+      ...(amenities && { amenities: JSON.stringify(amenities) }),
+      ...(status && { status }),
+      ...(capacity && { capacity: parseInt(capacity, 10) }),
+      ...(description && { description }),
+      ...(price && { price: parseFloat(price) }),
+      ...(dateAvailable && { dateAvailable: new Date(dateAvailable) }),
+      ...(roomCondition && { roomCondition }),
+    };
 
-    // Update the room
     const updatedRoom = await prisma.room.update({
       where: { id: parseInt(roomId) },
       data: updateData,
@@ -244,10 +227,9 @@ const updateRoom = async (req, res) => {
     ) {
       res.status(400).json({ error: "Room identifier already in use" });
     } else {
-      res.status(500).json({
-        error: "Internal server error",
-        details: error.message,
-      });
+      res
+        .status(500)
+        .json({ error: "Internal server error", details: error.message });
     }
   }
 };
@@ -260,14 +242,19 @@ const deleteRoom = async (req, res) => {
   }
 
   try {
-    // Get the hostelOwnerId from the authenticated user
     const hostelOwnerId = req.user.id;
 
-    // Check if the room exists and belongs to the authenticated hostel owner
     const existingRoom = await prisma.room.findFirst({
       where: {
         id: parseInt(roomId),
         hostelOwnerId: hostelOwnerId,
+      },
+      include: {
+        bookings: {
+          where: {
+            status: { in: ["pending", "confirmed"] },
+          },
+        },
       },
     });
 
@@ -275,7 +262,12 @@ const deleteRoom = async (req, res) => {
       return res.status(404).json({ error: "Room not found or unauthorized" });
     }
 
-    // Delete the room
+    if (existingRoom.bookings.length > 0) {
+      return res
+        .status(400)
+        .json({ error: "Cannot delete room with active bookings" });
+    }
+
     await prisma.room.delete({
       where: { id: parseInt(roomId) },
     });
@@ -285,10 +277,70 @@ const deleteRoom = async (req, res) => {
     });
   } catch (error) {
     console.error("Delete room error:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      details: error.message,
+    res
+      .status(500)
+      .json({ error: "Internal server error", details: error.message });
+  }
+};
+
+const getRoomAvailability = async (req, res) => {
+  const { roomId } = req.params;
+  const { startDate, endDate } = req.query;
+
+  if (!roomId || !startDate || !endDate) {
+    return res
+      .status(400)
+      .json({ error: "Room ID, start date, and end date are required" });
+  }
+
+  try {
+    const room = await prisma.room.findUnique({
+      where: { id: parseInt(roomId) },
+      include: {
+        bookings: {
+          where: {
+            status: { in: ["pending", "confirmed"] },
+            OR: [
+              {
+                checkInDate: {
+                  gte: new Date(startDate),
+                  lte: new Date(endDate),
+                },
+              },
+              {
+                checkOutDate: {
+                  gte: new Date(startDate),
+                  lte: new Date(endDate),
+                },
+              },
+              {
+                AND: [
+                  { checkInDate: { lte: new Date(startDate) } },
+                  { checkOutDate: { gte: new Date(endDate) } },
+                ],
+              },
+            ],
+          },
+        },
+      },
     });
+
+    if (!room) {
+      return res.status(404).json({ error: "Room not found" });
+    }
+
+    const isAvailable = room.bookings.length === 0;
+
+    res.status(200).json({
+      message: "Room availability retrieved successfully",
+      isAvailable,
+      conflictingBookings: room.bookings,
+    });
+  } catch (error) {
+    console.error("Get room availability error:", error);
+    res
+      .status(500)
+      .json({ error: "Internal server error", details: error.message });
   }
 };
 
@@ -297,4 +349,5 @@ module.exports = {
   getRooms,
   updateRoom,
   deleteRoom,
+  getRoomAvailability,
 };
