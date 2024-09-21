@@ -1,11 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import hms from "../../assets/Admin/hms.png";
 import { IoHomeOutline } from "react-icons/io5";
 import { FaRegCalendarAlt } from "react-icons/fa";
 import { MdOutlineBedroomParent } from "react-icons/md";
 import { IoPricetagsOutline } from "react-icons/io5";
 import { RiCustomerService2Line } from "react-icons/ri";
-import { FiSettings } from "react-icons/fi";
+import { FiSettings, FiLogOut } from "react-icons/fi";
 import { GiMoneyStack } from "react-icons/gi";
 import { AiFillEye } from "react-icons/ai";
 
@@ -22,17 +23,25 @@ const AdminPage = () => {
   const [active, setActive] = useState("dashboard");
   const [openModel, setModel] = useState(false);
   const [editData, setEditData] = useState();
+  const navigate = useNavigate();
 
   const handleClick = (act) => {
     setActive(act);
     setModel(false);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    // Add any other necessary cleanup here
+    navigate("/login");
+  };
+
   const navItems = [
     { id: "dashboard", icon: IoHomeOutline, label: "Dashboard" },
     { id: "bookings", icon: FaRegCalendarAlt, label: "Bookings" },
     { id: "rooms", icon: MdOutlineBedroomParent, label: "Rooms" },
-    { id: "deals", icon: IoPricetagsOutline, label: "Deals" },
+
     { id: "payments", icon: GiMoneyStack, label: "Payments" },
     { id: "reports", icon: RiCustomerService2Line, label: "Reports" },
     { id: "user-view", icon: AiFillEye, label: "User View" },
@@ -47,8 +56,6 @@ const AdminPage = () => {
         return <AdminBookings />;
       case "rooms":
         return <AdminRooms setModel={setModel} setEditData={setEditData} />;
-      case "deals":
-        return <AdminDeals />;
       case "payments":
         return <AdminPayments />;
       case "reports":
@@ -65,14 +72,14 @@ const AdminPage = () => {
   return (
     <div className="w-full max-w-screen-2xl mx-auto flex gap-3 relative h-screen">
       {/* LEFT SECTION */}
-      <div className="fixed top-0 left-0 w-[19%] h-screen bg-white flex flex-col gap-3 p-4 overflow-y-auto">
+      <div className="fixed top-0 left-0 w-[19%] h-screen bg-white flex flex-col p-4">
         <div className="w-full flex items-center my-2 mb-6 gap-2">
           <img className="w-14 h-14 object-cover" src={hms} alt="Hostel Logo" />
           <h1 className="uppercase text-blue-500 font-semibold text-xl">
             Hostel Name
           </h1>
         </div>
-        <div className="w-full flex flex-col gap-4">
+        <div className="w-full flex-grow flex flex-col gap-4 overflow-y-auto">
           {navItems.map((item) => (
             <div
               key={item.id}
@@ -87,6 +94,14 @@ const AdminPage = () => {
               <h1>{item.label}</h1>
             </div>
           ))}
+        </div>
+        {/* Separate logout button */}
+        <div
+          onClick={handleLogout}
+          className="w-full flex gap-2 cursor-pointer hover:bg-red-200 hover:text-red-600 font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group mt-auto mb-4"
+        >
+          <FiLogOut className="w-6 h-6" />
+          <h1>Logout</h1>
         </div>
       </div>
 

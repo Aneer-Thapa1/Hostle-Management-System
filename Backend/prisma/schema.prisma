@@ -26,26 +26,31 @@ model User {
 }
 
 model HostelOwner {
-  id          Int        @id @default(autoincrement())
-  hostelName  String
-  ownerName   String
-  email       String     @unique
-  contact     String
-  password    String
-  location    String
-  address     String
-  latitude    Float
-  longitude   Float
-  description String     @db.Text
-  mainPhoto   String
-  avgRating   Float      @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  rooms       Room[]
-  deals       Deal[]
-  bookings    Booking[]
-  ratings     Rating[]
-  favorites   Favorite[]
+  id                Int                @id @default(autoincrement())
+  hostelName        String
+  ownerName         String
+  email             String             @unique
+  contact           String
+  password          String
+  location          String
+  address           String
+  latitude          Float
+  longitude         Float
+  description       String             @db.Text
+  mainPhoto         String
+  avgRating         Float              @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  rooms             Room[]
+  deals             Deal[]
+  bookings          Booking[]
+  ratings           Rating[]
+  favorites         Favorite[]
+  packages          Package[]
+  facilities        Facility[]
+  galleryImages     GalleryImage[]
+  meals             Meal[]
+  nearbyAttractions NearbyAttraction[]
 }
 
 model Room {
@@ -127,4 +132,55 @@ model Favorite {
   updatedAt DateTime    @updatedAt
 
   @@unique([userId, hostelId])
+}
+
+// New models for content management
+
+model Package {
+  id            Int         @id @default(autoincrement())
+  name          String
+  description   String      @db.Text
+  price         Float
+  hostelOwnerId Int
+  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Facility {
+  id            Int         @id @default(autoincrement())
+  name          String
+  hostelOwnerId Int
+  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model GalleryImage {
+  id            Int         @id @default(autoincrement())
+  imageUrl      String
+  hostelOwnerId Int
+  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Meal {
+  id            Int         @id @default(autoincrement())
+  name          String
+  description   String      @db.Text
+  hostelOwnerId Int
+  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model NearbyAttraction {
+  id            Int         @id @default(autoincrement())
+  name          String
+  distance      String
+  hostelOwnerId Int
+  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
