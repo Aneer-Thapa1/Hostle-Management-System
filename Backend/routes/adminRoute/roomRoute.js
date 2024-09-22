@@ -7,5 +7,6 @@ const authMiddleware = require("../../middleware/authMiddleware.js");
 router.post("/addRoom", authMiddleware, roomController.addRoom);
 router.get("/getRooms", authMiddleware, roomController.getRooms);
 router.put("/updateRoom/:id", authMiddleware, roomController.updateRoom);
+router.delete("/deleteRoom/:id", authMiddleware, roomController.deleteRoom);
 
 module.exports = router;

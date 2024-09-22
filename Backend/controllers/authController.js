@@ -76,8 +76,6 @@ const login = async (req, res) => {
       .json({ success: false, message: "Email and password are required" });
   }
 
-  console.log(email);
-
   try {
     // Attempt to find the user by email in the 'user' model
     let user = await prisma.user.findUnique({
@@ -121,7 +119,7 @@ const login = async (req, res) => {
 
     // Sign the JWT
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "10d",
     });
 
     // Set the JWT as a cookie
@@ -129,7 +127,7 @@ const login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // Use secure cookies in production
       sameSite: "strict", // Protect against CSRF
-      maxAge: 3600000, // 1 hour
+      maxAge: 86400000 * 10, // 1 hour
     });
 
     // Return successful login response

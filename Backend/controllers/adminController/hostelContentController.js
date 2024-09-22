@@ -63,9 +63,7 @@ const hostelContentController = {
 
   getPackages: async (req, res) => {
     try {
-      const { hostelId } = req.params;
-
-      const id = parseInt(hostelId, 10);
+      const id = req.user.user.id;
 
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
@@ -86,7 +84,7 @@ const hostelContentController = {
 
   addPackage: async (req, res) => {
     try {
-      const { hostelId } = req.params;
+      const hostelId = req.user.user.id;
       const { name, description, price } = req.body;
 
       const id = parseInt(hostelId, 10);
@@ -115,7 +113,8 @@ const hostelContentController = {
 
   updatePackage: async (req, res) => {
     try {
-      const { packageId } = req.params;
+      console.log(req.params);
+      const packageId = req.params.id;
       const { name, description, price } = req.body;
 
       const id = parseInt(packageId, 10);
@@ -140,7 +139,7 @@ const hostelContentController = {
 
   deletePackage: async (req, res) => {
     try {
-      const { packageId } = req.params;
+      const packageId = req.params.id;
 
       const id = parseInt(packageId, 10);
 
@@ -161,7 +160,7 @@ const hostelContentController = {
 
   getFacilities: async (req, res) => {
     try {
-      const { hostelId } = req.params;
+      const hostelId = req.user.user.id;
 
       const id = parseInt(hostelId, 10);
 
@@ -184,7 +183,7 @@ const hostelContentController = {
 
   addFacility: async (req, res) => {
     try {
-      const { hostelId } = req.params;
+      const hostelId = req.user.user.id;
       const { name } = req.body;
 
       const id = parseInt(hostelId, 10);
@@ -211,7 +210,7 @@ const hostelContentController = {
 
   deleteFacility: async (req, res) => {
     try {
-      const { facilityId } = req.params;
+      const facilityId = req.params.id;
 
       const id = parseInt(facilityId, 10);
 
@@ -232,7 +231,7 @@ const hostelContentController = {
 
   getGalleryImages: async (req, res) => {
     try {
-      const { hostelId } = req.params;
+      const hostelId = req.user.user.id;
 
       const id = parseInt(hostelId, 10);
 
@@ -256,8 +255,8 @@ const hostelContentController = {
 
   addGalleryImage: async (req, res) => {
     try {
-      const { hostelId } = req.params;
-      const { imageUrl } = req.body;
+      const hostelId = req.user.user.id;
+      const { url } = req.body;
 
       const id = parseInt(hostelId, 10);
 
@@ -267,7 +266,7 @@ const hostelContentController = {
 
       const newImage = await prisma.galleryImage.create({
         data: {
-          imageUrl,
+          imageUrl: url,
           hostelOwner: { connect: { id } },
         },
       });
@@ -283,7 +282,7 @@ const hostelContentController = {
 
   deleteGalleryImage: async (req, res) => {
     try {
-      const { imageId } = req.params;
+      const imageId = req.params.id;
 
       const id = parseInt(imageId, 10);
 
@@ -305,7 +304,7 @@ const hostelContentController = {
 
   getMeals: async (req, res) => {
     try {
-      const { hostelId } = req.params;
+      const hostelId = req.user.user.id;
 
       const id = parseInt(hostelId, 10);
 
@@ -328,7 +327,7 @@ const hostelContentController = {
 
   addMeal: async (req, res) => {
     try {
-      const { hostelId } = req.params;
+      const hostelId = req.user.user.id;
       const { name, description } = req.body;
 
       const id = parseInt(hostelId, 10);
@@ -356,7 +355,7 @@ const hostelContentController = {
 
   updateMeal: async (req, res) => {
     try {
-      const { mealId } = req.params;
+      const mealId = req.params.id;
       const { name, description } = req.body;
 
       const id = parseInt(mealId, 10);
@@ -381,7 +380,7 @@ const hostelContentController = {
 
   deleteMeal: async (req, res) => {
     try {
-      const { mealId } = req.params;
+      const mealId = req.params.id;
 
       const id = parseInt(mealId, 10);
 
@@ -402,7 +401,7 @@ const hostelContentController = {
 
   getNearbyAttractions: async (req, res) => {
     try {
-      const { hostelId } = req.params;
+      const hostelId = req.user.user.id;
 
       const id = parseInt(hostelId, 10);
 
@@ -426,7 +425,7 @@ const hostelContentController = {
 
   addNearbyAttraction: async (req, res) => {
     try {
-      const { hostelId } = req.params;
+      const hostelId = req.user.user.id;
       const { name, distance } = req.body;
 
       const id = parseInt(hostelId, 10);
@@ -455,7 +454,7 @@ const hostelContentController = {
 
   updateNearbyAttraction: async (req, res) => {
     try {
-      const { attractionId } = req.params;
+      const attractionId = req.params.id;
       const { name, distance } = req.body;
 
       const id = parseInt(attractionId, 10);
@@ -481,7 +480,7 @@ const hostelContentController = {
 
   deleteNearbyAttraction: async (req, res) => {
     try {
-      const { attractionId } = req.params;
+      const attractionId = req.params.id;
 
       const id = parseInt(attractionId, 10);
 

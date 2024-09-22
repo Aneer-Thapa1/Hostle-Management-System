@@ -11,18 +11,20 @@ datasource db {
 }
 
 model User {
-  id        Int        @id @default(autoincrement())
-  name      String
-  email     String     @unique
-  password  String
-  address   String
-  contact   String
-  role      String     @default("user")
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  bookings  Booking[]
-  ratings   Rating[]
-  favorites Favorite[]
+  id                Int                @id @default(autoincrement())
+  name              String
+  email             String             @unique
+  password          String
+  address           String
+  contact           String
+  role              String             @default("user")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  bookings          Booking[]
+  ratings           Rating[]
+  favorites         Favorite[]
+  hostelMemberships HostelMembership[]
+  payments          Payment[]
 }
 
 model HostelOwner {
@@ -51,6 +53,7 @@ model HostelOwner {
   galleryImages     GalleryImage[]
   meals             Meal[]
   nearbyAttractions NearbyAttraction[]
+  hostelMemberships HostelMembership[]
 }
 
 model Room {
@@ -67,7 +70,7 @@ model Room {
   dateAvailable  DateTime
   hostelOwnerId  Int
   hostelOwner    HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  deals          Deal[] // New: A room can be associated with multiple deals
+  deals          Deal[] // A room can be associated with multiple deals
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 }
@@ -88,7 +91,7 @@ model Deal {
   termsAndConditions String      @db.Text
   hostelOwnerId      Int
   hostelOwner        HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  rooms              Room[] // New: A deal can be associated with multiple rooms
+  rooms              Room[] // A deal can be associated with multiple rooms
   bookings           Booking[]
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
@@ -134,17 +137,49 @@ model Favorite {
   @@unique([userId, hostelId])
 }
 
-// New models for content management
-
 model Package {
-  id            Int         @id @default(autoincrement())
+  id            Int                @id @default(autoincrement())
   name          String
-  description   String      @db.Text
+  description   String             @db.Text
   price         Float
+  duration      Int // Duration in days
   hostelOwnerId Int
-  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  hostelOwner   HostelOwner        @relation(fields: [hostelOwnerId], references: [id])
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  memberships   HostelMembership[]
+}
+
+model HostelMembership {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  hostelId  Int
+  hostel    HostelOwner @relation(fields: [hostelId], references: [id])
+  packageId Int
+  package   Package     @relation(fields: [packageId], references: [id])
+  startDate DateTime    @default(now())
+  endDate   DateTime
+  status    String // e.g., "active", "inactive", "expired"
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  payments  Payment[]
+
+  @@unique([userId, hostelId, packageId])
+}
+
+model Payment {
+  id                 Int              @id @default(autoincrement())
+  amount             Float
+  paymentDate        DateTime         @default(now())
+  paymentMethod      String // e.g., "credit_card", "bank_transfer", "cash"
+  status             String // e.g., "pending", "completed", "failed"
+  userId             Int
+  user               User             @relation(fields: [userId], references: [id])
+  hostelMembershipId Int
+  hostelMembership   HostelMembership @relation(fields: [hostelMembershipId], references: [id])
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 }
 
 model Facility {
