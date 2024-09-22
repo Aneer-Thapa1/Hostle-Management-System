@@ -18,6 +18,7 @@ import AdminPayments from "../AdminComponent/AdminPayments";
 import AdminReports from "../AdminComponent/AdminReports";
 import AdminSettings from "../AdminComponent/AdminSettings";
 import AdminUserView from "../AdminComponent/AdminUserView";
+import AdminStudents from "../AdminComponent/AdminStudents.jsx";
 
 const AdminPage = () => {
   const [active, setActive] = useState("dashboard");
@@ -41,6 +42,7 @@ const AdminPage = () => {
     { id: "dashboard", icon: IoHomeOutline, label: "Dashboard" },
     { id: "bookings", icon: FaRegCalendarAlt, label: "Bookings" },
     { id: "rooms", icon: MdOutlineBedroomParent, label: "Rooms" },
+    { id: "students", icon: MdOutlineBedroomParent, label: "Students" },
 
     { id: "payments", icon: GiMoneyStack, label: "Payments" },
     { id: "reports", icon: RiCustomerService2Line, label: "Reports" },
@@ -64,6 +66,8 @@ const AdminPage = () => {
         return <AdminUserView />;
       case "settings":
         return <AdminSettings />;
+      case "students":
+        return <AdminStudents />;
       default:
         return <AdminDashboard />;
     }

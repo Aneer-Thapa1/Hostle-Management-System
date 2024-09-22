@@ -163,7 +163,8 @@ const getRooms = async (req, res) => {
 };
 
 const updateRoom = async (req, res) => {
-  const { roomId } = req.params;
+  const roomId = req.params.id;
+
   const {
     roomIdentifier,
     type,
@@ -235,7 +236,7 @@ const updateRoom = async (req, res) => {
 };
 
 const deleteRoom = async (req, res) => {
-  const { roomId } = req.params;
+  const roomId = req.params.id;
 
   if (!roomId) {
     return res.status(400).json({ error: "Room ID is required" });
@@ -244,15 +245,20 @@ const deleteRoom = async (req, res) => {
   try {
     const hostelOwnerId = req.user.id;
 
+    // First, find the room and its associated hostel owner
     const existingRoom = await prisma.room.findFirst({
       where: {
         id: parseInt(roomId),
         hostelOwnerId: hostelOwnerId,
       },
       include: {
-        bookings: {
-          where: {
-            status: { in: ["pending", "confirmed"] },
+        hostelOwner: {
+          include: {
+            bookings: {
+              where: {
+                status: { in: ["pending", "confirmed"] },
+              },
+            },
           },
         },
       },
@@ -262,12 +268,14 @@ const deleteRoom = async (req, res) => {
       return res.status(404).json({ error: "Room not found or unauthorized" });
     }
 
-    if (existingRoom.bookings.length > 0) {
+    // Check if there are any active bookings for the hostel
+    if (existingRoom.hostelOwner.bookings.length > 0) {
       return res
         .status(400)
-        .json({ error: "Cannot delete room with active bookings" });
+        .json({ error: "Cannot delete room while hostel has active bookings" });
     }
 
+    // If no active bookings, proceed with deletion
     await prisma.room.delete({
       where: { id: parseInt(roomId) },
     });
