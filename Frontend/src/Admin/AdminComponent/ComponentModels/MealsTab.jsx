@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useHostelApi } from "./useHostelApi";
-import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaLeaf, FaBreadSlice } from "react-icons/fa";
 
 const MealsTab = ({ hostelData, setHostelData }) => {
   const { fetchMeals, addMeal, updateMeal, deleteMeal } = useHostelApi();
   const [mealForm, setMealForm] = useState({
     name: "",
     description: "",
+    price: "",
+    isVegan: false,
+    isGlutenFree: false,
+    available: true,
   });
   const [isEditing, setIsEditing] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
@@ -33,8 +37,9 @@ const MealsTab = ({ hostelData, setHostelData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const mealData = { ...mealForm, price: parseFloat(mealForm.price) };
       if (isEditing) {
-        const updated = await updateMeal(mealForm.id, mealForm);
+        const updated = await updateMeal(mealForm.id, mealData);
         setHostelData((prev) => ({
           ...prev,
           meals: prev.meals.map((meal) =>
@@ -42,14 +47,21 @@ const MealsTab = ({ hostelData, setHostelData }) => {
           ),
         }));
       } else {
-        const addedMeal = await addMeal(mealForm);
+        const addedMeal = await addMeal(mealData);
         setHostelData((prev) => ({
           ...prev,
           meals: [...(prev.meals || []), addedMeal],
         }));
       }
       setShowPopup(false);
-      setMealForm({ name: "", description: "" });
+      setMealForm({
+        name: "",
+        description: "",
+        price: "",
+        isVegan: false,
+        isGlutenFree: false,
+        available: true,
+      });
       setIsEditing(false);
     } catch (error) {
       console.error("Error handling meal:", error);
@@ -79,7 +91,14 @@ const MealsTab = ({ hostelData, setHostelData }) => {
       setMealForm(meal);
       setIsEditing(true);
     } else {
-      setMealForm({ name: "", description: "" });
+      setMealForm({
+        name: "",
+        description: "",
+        price: "",
+        isVegan: false,
+        isGlutenFree: false,
+        available: true,
+      });
       setIsEditing(false);
     }
     setShowPopup(true);
@@ -89,12 +108,12 @@ const MealsTab = ({ hostelData, setHostelData }) => {
   if (error) return <div className="text-red-500">Error: {error}</div>;
 
   return (
-    <div className="bg-white  rounded-lg  h-full flex flex-col">
+    <div className="bg-white rounded-lg h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Meals</h2>
+        <h2 className="text-3xl font-bold text-gray-800">Meals</h2>
         <button
           onClick={() => openPopup()}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full flex items-center"
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full flex items-center transition duration-300 ease-in-out transform hover:scale-105"
         >
           <FaPlus className="mr-2" /> Add Meal
         </button>
@@ -102,44 +121,76 @@ const MealsTab = ({ hostelData, setHostelData }) => {
 
       <div className="overflow-y-auto flex-grow">
         {Array.isArray(hostelData?.meals) && hostelData.meals.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {hostelData.meals.map((meal) => (
-              <div key={meal.id} className="bg-gray-100 p-4 rounded-lg shadow">
-                <h3 className="font-bold text-lg mb-2 text-gray-800">
+              <div
+                key={meal.id}
+                className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition duration-300 ease-in-out transform hover:-translate-y-1"
+              >
+                <h3 className="font-bold text-xl mb-2 text-gray-800">
                   {meal.name}
                 </h3>
                 <p className="text-gray-600 mb-4">{meal.description}</p>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => openPopup(meal)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded"
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-2xl font-bold text-blue-500">
+                    ${meal.price.toFixed(2)}
+                  </span>
+                  <div className="flex space-x-2">
+                    {meal.isVegan && (
+                      <FaLeaf className="text-green-500" title="Vegan" />
+                    )}
+                    {meal.isGlutenFree && (
+                      <FaBreadSlice
+                        className="text-yellow-500"
+                        title="Gluten-Free"
+                      />
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span
+                    className={`px-2 py-1 rounded-full text-sm ${
+                      meal.available
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
                   >
-                    <FaEdit />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteMeal(meal.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                  >
-                    <FaTrash />
-                  </button>
+                    {meal.available ? "Available" : "Unavailable"}
+                  </span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => openPopup(meal)}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-full transition duration-300 ease-in-out"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMeal(meal.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition duration-300 ease-in-out"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">No meals available.</p>
+          <p className="text-gray-500 text-center text-lg">
+            No meals available. Add your first meal!
+          </p>
         )}
       </div>
 
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4 text-gray-800">
+          <div className="bg-white p-8 rounded-lg w-full max-w-md">
+            <h3 className="text-2xl font-bold mb-6 text-gray-800">
               {isEditing ? "Edit Meal" : "Add New Meal"}
             </h3>
             <form onSubmit={handleSubmit}>
               <input
-                className="w-full p-2 mb-4 border border-gray-300 rounded text-gray-800"
+                className="w-full p-3 mb-4 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Meal Name"
                 value={mealForm.name}
                 onChange={(e) =>
@@ -148,7 +199,7 @@ const MealsTab = ({ hostelData, setHostelData }) => {
                 required
               />
               <textarea
-                className="w-full p-2 mb-4 border border-gray-300 rounded text-gray-800"
+                className="w-full p-3 mb-4 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Meal Description"
                 value={mealForm.description}
                 onChange={(e) =>
@@ -157,17 +208,66 @@ const MealsTab = ({ hostelData, setHostelData }) => {
                 required
                 rows="3"
               />
+              <input
+                className="w-full p-3 mb-4 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Price"
+                type="number"
+                step="0.01"
+                value={mealForm.price}
+                onChange={(e) =>
+                  setMealForm({ ...mealForm, price: e.target.value })
+                }
+                required
+              />
+              <div className="flex justify-between mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={mealForm.isVegan}
+                    onChange={(e) =>
+                      setMealForm({ ...mealForm, isVegan: e.target.checked })
+                    }
+                    className="mr-2"
+                  />
+                  Vegan
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={mealForm.isGlutenFree}
+                    onChange={(e) =>
+                      setMealForm({
+                        ...mealForm,
+                        isGlutenFree: e.target.checked,
+                      })
+                    }
+                    className="mr-2"
+                  />
+                  Gluten-Free
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={mealForm.available}
+                    onChange={(e) =>
+                      setMealForm({ ...mealForm, available: e.target.checked })
+                    }
+                    className="mr-2"
+                  />
+                  Available
+                </label>
+              </div>
               <div className="flex justify-end space-x-2">
                 <button
                   type="submit"
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition duration-300 ease-in-out"
                 >
                   {isEditing ? "Update" : "Add"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowPopup(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg transition duration-300 ease-in-out"
                 >
                   Cancel
                 </button>

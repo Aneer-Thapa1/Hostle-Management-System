@@ -1,108 +1,102 @@
 import React from "react";
+import { useQuery } from "react-query";
+import axios from "axios";
 import {
   FaWifi,
   FaUtensils,
   FaTshirt,
   FaLock,
-  FaBook,
-  FaGuitar,
-  FaBiking,
-  FaHiking,
   FaGamepad,
-  FaCocktail,
-  FaInfoCircle,
+  FaSpinner,
+  FaExclamationCircle,
 } from "react-icons/fa";
+// import ContentHeader from "./ContentHeader";
 
-const Facilities = ({ amenities = [], activities = [] }) => {
-  const facilityCategories = [
-    { name: "General Amenities", icon: FaWifi },
-    { name: "Kitchen Facilities", icon: FaUtensils },
-    { name: "Laundry Facilities", icon: FaTshirt },
-    { name: "Security", icon: FaLock },
-    { name: "Entertainment", icon: FaGamepad },
-  ];
+const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
-  const activityCategories = [
-    { name: "Social Events", icon: FaCocktail },
-    { name: "Cultural Activities", icon: FaBook },
-    { name: "Music & Arts", icon: FaGuitar },
-    { name: "Outdoor Activities", icon: FaHiking },
-    { name: "Sports & Fitness", icon: FaBiking },
-  ];
+const fetchFacilities = async () => {
+  const token = localStorage.getItem("token");
 
-  const FacilityItem = ({ item, Icon }) => (
-    <div className="flex items-center space-x-2 text-gray-300">
-      <Icon className="text-primaryColor" />
-      <span>{item}</span>
-    </div>
-  );
+  if (!token) {
+    throw new Error("No authentication token found");
+  }
 
-  const CategorySection = ({ category, items, ItemComponent }) => {
-    const filteredItems = items.filter((a) => a.category === category.name);
+  const response = await axios.get(`${apiUrl}/api/content/facilities`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
 
-    if (filteredItems.length === 0) {
-      return null; // Don't render empty categories
+const Facilities = () => {
+  const {
+    data: facilities,
+    isLoading,
+    error,
+  } = useQuery("facilities", fetchFacilities, {
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  const getIconForFacility = (facilityName) => {
+    const iconMap = {
+      "Wi-Fi": FaWifi,
+      Kitchen: FaUtensils,
+      Laundry: FaTshirt,
+      Security: FaLock,
+      Entertainment: FaGamepad,
+    };
+
+    for (const [key, value] of Object.entries(iconMap)) {
+      if (facilityName.toLowerCase().includes(key.toLowerCase())) {
+        return value;
+      }
     }
 
+    return FaGamepad; // Default icon
+  };
+
+  const FacilityItem = ({ item }) => {
+    const Icon = getIconForFacility(item.name);
     return (
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-white mb-3 flex items-center">
-          <category.icon className="mr-2 text-primaryColor" />
-          {category.name}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredItems.map((item, index) => (
-            <ItemComponent key={index} item={item.name} Icon={category.icon} />
-          ))}
-        </div>
+      <div className="flex items-center space-x-2 text-gray-300">
+        <Icon className="text-primaryColor" />
+        <span>{item.name}</span>
       </div>
     );
   };
 
-  const NoDataMessage = ({ message }) => (
-    <div className="flex items-center justify-center text-gray-400 py-8">
-      <FaInfoCircle className="mr-2" />
-      <span>{message}</span>
-    </div>
-  );
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <FaSpinner className="animate-spin text-primaryColor text-4xl" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64 text-red-500">
+        <FaExclamationCircle className="mr-2" />
+        <span>Error loading facilities: {error.message}</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
-      <h2 className="text-2xl font-bold text-white mb-6">
-        Facilities and Activities
-      </h2>
-
-      <div className="mb-8">
-        <h3 className="text-xl font-bold text-white mb-4">Hostel Facilities</h3>
-        {amenities.length > 0 ? (
-          facilityCategories.map((category) => (
-            <CategorySection
-              key={category.name}
-              category={category}
-              items={amenities}
-              ItemComponent={FacilityItem}
-            />
-          ))
+    <div>
+      <div className="bg-boxColor rounded-b-lg p-6">
+        {facilities && facilities.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {facilities.map((facility) => (
+              <FacilityItem key={facility.id} item={facility} />
+            ))}
+          </div>
         ) : (
-          <NoDataMessage message="No facilities information available at the moment." />
-        )}
-      </div>
-
-      <div>
-        <h3 className="text-xl font-bold text-white mb-4">
-          Activities and Events
-        </h3>
-        {activities.length > 0 ? (
-          activityCategories.map((category) => (
-            <CategorySection
-              key={category.name}
-              category={category}
-              items={activities}
-              ItemComponent={FacilityItem}
-            />
-          ))
-        ) : (
-          <NoDataMessage message="No activities or events information available at the moment." />
+          <div className="text-gray-400 text-center py-8">
+            No facilities information available at the moment.
+          </div>
         )}
       </div>
     </div>

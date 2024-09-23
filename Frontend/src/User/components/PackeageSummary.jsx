@@ -1,7 +1,65 @@
 import React from "react";
-import { FaCalendar, FaPercent, FaBed, FaStar } from "react-icons/fa";
+import { useQuery } from "react-query";
+import axios from "axios";
+import {
+  FaCalendar,
+  FaPercent,
+  FaBed,
+  FaStar,
+  FaSpinner,
+  FaExclamationCircle,
+} from "react-icons/fa";
 
-const PackageSummary = ({ deals }) => {
+const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
+
+const fetchPackages = async () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("No authentication token found");
+  }
+
+  const response = await axios.get(`${apiUrl}/api/content/packages`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
+const PackageSummary = () => {
+  const {
+    data: deals,
+    isLoading,
+    error,
+  } = useQuery("packages", fetchPackages, {
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  const getDiscountColor = (discount) => {
+    if (discount >= 50) return "text-red-500";
+    if (discount >= 30) return "text-yellow-500";
+    return "text-green-500";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <FaSpinner className="animate-spin text-primaryColor text-4xl" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64 text-red-500">
+        <FaExclamationCircle className="mr-2" />
+        <span>Error loading packages: {error.message}</span>
+      </div>
+    );
+  }
+
   if (!deals || deals.length === 0) {
     return (
       <div className="text-white text-center py-8">
@@ -9,12 +67,6 @@ const PackageSummary = ({ deals }) => {
       </div>
     );
   }
-
-  const getDiscountColor = (discount) => {
-    if (discount >= 50) return "text-red-500";
-    if (discount >= 30) return "text-yellow-500";
-    return "text-green-500";
-  };
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 animate-fade-in">

@@ -14,8 +14,16 @@ const hostelContentController = {
         where: { id },
         select: {
           hostelName: true,
-          description: true,
+          ownerName: true,
+          email: true,
+          contact: true,
           location: true,
+          address: true,
+          latitude: true,
+          longitude: true,
+          description: true,
+          mainPhoto: true,
+          avgRating: true,
         },
       });
 
@@ -34,10 +42,19 @@ const hostelContentController = {
 
   updateHostelInfo: async (req, res) => {
     try {
-      const { hostelId } = req.params;
-      const { name, description, location } = req.body;
-
-      const id = parseInt(hostelId, 10);
+      const id = req.user.user.id;
+      const {
+        hostelName,
+        ownerName,
+        email,
+        contact,
+        location,
+        address,
+        latitude,
+        longitude,
+        description,
+        mainPhoto,
+      } = req.body;
 
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
@@ -46,9 +63,16 @@ const hostelContentController = {
       const updatedHostel = await prisma.hostelOwner.update({
         where: { id },
         data: {
-          hostelName: name,
-          description,
+          hostelName,
+          ownerName,
+          email,
+          contact,
           location,
+          address,
+          latitude,
+          longitude,
+          description,
+          mainPhoto,
         },
       });
 
@@ -85,11 +109,17 @@ const hostelContentController = {
   addPackage: async (req, res) => {
     try {
       const hostelId = req.user.user.id;
-      const { name, description, price } = req.body;
+      const {
+        name,
+        description,
+        price,
+        duration,
+        services,
+        mealPlan,
+        cancellationPolicy,
+      } = req.body;
 
-      const id = parseInt(hostelId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(hostelId)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
@@ -98,7 +128,11 @@ const hostelContentController = {
           name,
           description,
           price: parseFloat(price),
-          hostelOwner: { connect: { id } },
+          duration: parseInt(duration),
+          services,
+          mealPlan,
+          cancellationPolicy,
+          hostelOwner: { connect: { id: hostelId } },
         },
       });
 
@@ -113,19 +147,32 @@ const hostelContentController = {
 
   updatePackage: async (req, res) => {
     try {
-      console.log(req.params);
-      const packageId = req.params.id;
-      const { name, description, price } = req.body;
+      const packageId = parseInt(req.params.id, 10);
+      const {
+        name,
+        description,
+        price,
+        duration,
+        services,
+        mealPlan,
+        cancellationPolicy,
+      } = req.body;
 
-      const id = parseInt(packageId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(packageId)) {
         return res.status(400).json({ message: "Invalid package ID" });
       }
 
       const updatedPackage = await prisma.package.update({
-        where: { id },
-        data: { name, description, price: parseFloat(price) },
+        where: { id: packageId },
+        data: {
+          name,
+          description,
+          price: parseFloat(price),
+          duration: parseInt(duration),
+          services,
+          mealPlan,
+          cancellationPolicy,
+        },
       });
 
       res.json(updatedPackage);
@@ -139,15 +186,13 @@ const hostelContentController = {
 
   deletePackage: async (req, res) => {
     try {
-      const packageId = req.params.id;
+      const packageId = parseInt(req.params.id, 10);
 
-      const id = parseInt(packageId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(packageId)) {
         return res.status(400).json({ message: "Invalid package ID" });
       }
 
-      await prisma.package.delete({ where: { id } });
+      await prisma.package.delete({ where: { id: packageId } });
 
       res.status(204).send();
     } catch (error) {
@@ -162,14 +207,12 @@ const hostelContentController = {
     try {
       const hostelId = req.user.user.id;
 
-      const id = parseInt(hostelId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(hostelId)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const facilities = await prisma.facility.findMany({
-        where: { hostelOwnerId: id },
+        where: { hostelOwnerId: hostelId },
       });
 
       res.json(facilities);
@@ -184,18 +227,19 @@ const hostelContentController = {
   addFacility: async (req, res) => {
     try {
       const hostelId = req.user.user.id;
-      const { name } = req.body;
+      const { name, description, available, operatingHours } = req.body;
 
-      const id = parseInt(hostelId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(hostelId)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const newFacility = await prisma.facility.create({
         data: {
           name,
-          hostelOwner: { connect: { id } },
+          description,
+          available,
+          operatingHours,
+          hostelOwner: { connect: { id: hostelId } },
         },
       });
 
@@ -210,15 +254,13 @@ const hostelContentController = {
 
   deleteFacility: async (req, res) => {
     try {
-      const facilityId = req.params.id;
+      const facilityId = parseInt(req.params.id, 10);
 
-      const id = parseInt(facilityId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(facilityId)) {
         return res.status(400).json({ message: "Invalid facility ID" });
       }
 
-      await prisma.facility.delete({ where: { id } });
+      await prisma.facility.delete({ where: { id: facilityId } });
 
       res.status(204).send();
     } catch (error) {
@@ -233,14 +275,12 @@ const hostelContentController = {
     try {
       const hostelId = req.user.user.id;
 
-      const id = parseInt(hostelId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(hostelId)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const images = await prisma.galleryImage.findMany({
-        where: { hostelOwnerId: id },
+        where: { hostelOwnerId: hostelId },
       });
 
       res.json(images);
@@ -256,18 +296,17 @@ const hostelContentController = {
   addGalleryImage: async (req, res) => {
     try {
       const hostelId = req.user.user.id;
-      const { url } = req.body;
+      const { imageUrl, description } = req.body;
 
-      const id = parseInt(hostelId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(hostelId)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const newImage = await prisma.galleryImage.create({
         data: {
-          imageUrl: url,
-          hostelOwner: { connect: { id } },
+          imageUrl,
+          description,
+          hostelOwner: { connect: { id: hostelId } },
         },
       });
 
@@ -282,15 +321,13 @@ const hostelContentController = {
 
   deleteGalleryImage: async (req, res) => {
     try {
-      const imageId = req.params.id;
+      const imageId = parseInt(req.params.id, 10);
 
-      const id = parseInt(imageId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(imageId)) {
         return res.status(400).json({ message: "Invalid image ID" });
       }
 
-      await prisma.galleryImage.delete({ where: { id } });
+      await prisma.galleryImage.delete({ where: { id: imageId } });
 
       res.status(204).send();
     } catch (error) {
@@ -306,14 +343,12 @@ const hostelContentController = {
     try {
       const hostelId = req.user.user.id;
 
-      const id = parseInt(hostelId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(hostelId)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const meals = await prisma.meal.findMany({
-        where: { hostelOwnerId: id },
+        where: { hostelOwnerId: hostelId },
       });
 
       res.json(meals);
@@ -328,11 +363,10 @@ const hostelContentController = {
   addMeal: async (req, res) => {
     try {
       const hostelId = req.user.user.id;
-      const { name, description } = req.body;
+      const { name, description, price, isVegan, isGlutenFree, available } =
+        req.body;
 
-      const id = parseInt(hostelId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(hostelId)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
@@ -340,7 +374,11 @@ const hostelContentController = {
         data: {
           name,
           description,
-          hostelOwner: { connect: { id } },
+          price: parseFloat(price),
+          isVegan,
+          isGlutenFree,
+          available,
+          hostelOwner: { connect: { id: hostelId } },
         },
       });
 
@@ -355,18 +393,24 @@ const hostelContentController = {
 
   updateMeal: async (req, res) => {
     try {
-      const mealId = req.params.id;
-      const { name, description } = req.body;
+      const mealId = parseInt(req.params.id, 10);
+      const { name, description, price, isVegan, isGlutenFree, available } =
+        req.body;
 
-      const id = parseInt(mealId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(mealId)) {
         return res.status(400).json({ message: "Invalid meal ID" });
       }
 
       const updatedMeal = await prisma.meal.update({
-        where: { id },
-        data: { name, description },
+        where: { id: mealId },
+        data: {
+          name,
+          description,
+          price: parseFloat(price),
+          isVegan,
+          isGlutenFree,
+          available,
+        },
       });
 
       res.json(updatedMeal);
@@ -380,15 +424,13 @@ const hostelContentController = {
 
   deleteMeal: async (req, res) => {
     try {
-      const mealId = req.params.id;
+      const mealId = parseInt(req.params.id, 10);
 
-      const id = parseInt(mealId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(mealId)) {
         return res.status(400).json({ message: "Invalid meal ID" });
       }
 
-      await prisma.meal.delete({ where: { id } });
+      await prisma.meal.delete({ where: { id: mealId } });
 
       res.status(204).send();
     } catch (error) {
@@ -403,14 +445,12 @@ const hostelContentController = {
     try {
       const hostelId = req.user.user.id;
 
-      const id = parseInt(hostelId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(hostelId)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const attractions = await prisma.nearbyAttraction.findMany({
-        where: { hostelOwnerId: id },
+        where: { hostelOwnerId: hostelId },
       });
 
       res.json(attractions);
@@ -426,11 +466,9 @@ const hostelContentController = {
   addNearbyAttraction: async (req, res) => {
     try {
       const hostelId = req.user.user.id;
-      const { name, distance } = req.body;
+      const { name, distance, type, openingHours, description } = req.body;
 
-      const id = parseInt(hostelId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(hostelId)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
@@ -438,7 +476,10 @@ const hostelContentController = {
         data: {
           name,
           distance,
-          hostelOwner: { connect: { id } },
+          type,
+          openingHours,
+          description,
+          hostelOwner: { connect: { id: hostelId } },
         },
       });
 
@@ -454,18 +495,16 @@ const hostelContentController = {
 
   updateNearbyAttraction: async (req, res) => {
     try {
-      const attractionId = req.params.id;
-      const { name, distance } = req.body;
+      const attractionId = parseInt(req.params.id, 10);
+      const { name, distance, type, openingHours, description } = req.body;
 
-      const id = parseInt(attractionId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(attractionId)) {
         return res.status(400).json({ message: "Invalid attraction ID" });
       }
 
       const updatedAttraction = await prisma.nearbyAttraction.update({
-        where: { id },
-        data: { name, distance },
+        where: { id: attractionId },
+        data: { name, distance, type, openingHours, description },
       });
 
       res.json(updatedAttraction);
@@ -480,15 +519,13 @@ const hostelContentController = {
 
   deleteNearbyAttraction: async (req, res) => {
     try {
-      const attractionId = req.params.id;
+      const attractionId = parseInt(req.params.id, 10);
 
-      const id = parseInt(attractionId, 10);
-
-      if (isNaN(id)) {
+      if (isNaN(attractionId)) {
         return res.status(400).json({ message: "Invalid attraction ID" });
       }
 
-      await prisma.nearbyAttraction.delete({ where: { id } });
+      await prisma.nearbyAttraction.delete({ where: { id: attractionId } });
 
       res.status(204).send();
     } catch (error) {
@@ -497,6 +534,140 @@ const hostelContentController = {
         message: "Error deleting nearby attraction",
         error: error.message,
       });
+    }
+  },
+
+  // New function to get rooms
+  getRooms: async (req, res) => {
+    try {
+      const hostelId = req.user.user.id;
+
+      if (isNaN(hostelId)) {
+        return res.status(400).json({ message: "Invalid hostel ID" });
+      }
+
+      const rooms = await prisma.room.findMany({
+        where: { hostelOwnerId: hostelId },
+      });
+
+      res.json(rooms);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+      res
+        .status(500)
+        .json({ message: "Error fetching rooms", error: error.message });
+    }
+  },
+
+  // New function to add a room
+  addRoom: async (req, res) => {
+    try {
+      const hostelId = req.user.user.id;
+      const {
+        roomIdentifier,
+        type,
+        floor,
+        amenities,
+        status,
+        capacity,
+        description,
+        price,
+        roomCondition,
+        dateAvailable,
+      } = req.body;
+
+      if (isNaN(hostelId)) {
+        return res.status(400).json({ message: "Invalid hostel ID" });
+      }
+
+      const newRoom = await prisma.room.create({
+        data: {
+          roomIdentifier,
+          type,
+          floor: parseInt(floor),
+          amenities,
+          status,
+          capacity: parseInt(capacity),
+          description,
+          price: parseFloat(price),
+          roomCondition,
+          dateAvailable: new Date(dateAvailable),
+          hostelOwner: { connect: { id: hostelId } },
+        },
+      });
+
+      res.status(201).json(newRoom);
+    } catch (error) {
+      console.error("Error adding room:", error);
+      res
+        .status(500)
+        .json({ message: "Error adding room", error: error.message });
+    }
+  },
+
+  // New function to update a room
+  updateRoom: async (req, res) => {
+    try {
+      const roomId = parseInt(req.params.id, 10);
+      const {
+        roomIdentifier,
+        type,
+        floor,
+        amenities,
+        status,
+        capacity,
+        description,
+        price,
+        roomCondition,
+        dateAvailable,
+      } = req.body;
+
+      if (isNaN(roomId)) {
+        return res.status(400).json({ message: "Invalid room ID" });
+      }
+
+      const updatedRoom = await prisma.room.update({
+        where: { id: roomId },
+        data: {
+          roomIdentifier,
+          type,
+          floor: parseInt(floor),
+          amenities,
+          status,
+          capacity: parseInt(capacity),
+          description,
+          price: parseFloat(price),
+          roomCondition,
+          dateAvailable: new Date(dateAvailable),
+        },
+      });
+
+      res.json(updatedRoom);
+    } catch (error) {
+      console.error("Error updating room:", error);
+      res
+        .status(500)
+        .json({ message: "Error updating room", error: error.message });
+    }
+  },
+
+  // New function to delete a room
+  deleteRoom: async (req, res) => {
+    try {
+      const roomId = parseInt(req.params.id, 10);
+
+      if (isNaN(roomId)) {
+        return res.status(400).json({ message: "Invalid room ID" });
+      }
+
+      await prisma.room.delete({ where: { id: roomId } });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting room:", error);
+      res
+        .status(500)
+        .json({ message: "Error deleting room", error: error.message });
     }
   },
 };

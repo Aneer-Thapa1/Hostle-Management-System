@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -44,7 +41,6 @@ model HostelOwner {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   rooms             Room[]
-  deals             Deal[]
   bookings          Booking[]
   ratings           Rating[]
   favorites         Favorite[]
@@ -61,8 +57,8 @@ model Room {
   roomIdentifier String
   type           String
   floor          Int
-  amenities      String      @db.Text // Store as JSON string
-  status         String // "available", "occupied", "maintenance"
+  amenities      String      @db.Text
+  status         String
   capacity       Int
   description    String      @db.Text
   price          Float
@@ -70,31 +66,8 @@ model Room {
   dateAvailable  DateTime
   hostelOwnerId  Int
   hostelOwner    HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  deals          Deal[] // A room can be associated with multiple deals
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
-}
-
-model Deal {
-  id                 Int         @id @default(autoincrement())
-  name               String
-  description        String      @db.Text
-  packageType        String // e.g., "Weekly", "Monthly", "Student", "Holiday"
-  basePrice          Float // Regular price without discount
-  discountPrice      Float? // Optional discounted price
-  maxOccupancy       Int // Maximum number of guests for this deal
-  amenities          String      @db.Text // Store as JSON string
-  features           String      @db.Text // Store as JSON string
-  startDate          DateTime? // Optional start date for seasonal or limited-time deals
-  endDate            DateTime? // Optional end date for seasonal or limited-time deals
-  isActive           Boolean     @default(true)
-  termsAndConditions String      @db.Text
-  hostelOwnerId      Int
-  hostelOwner        HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  rooms              Room[] // A deal can be associated with multiple rooms
-  bookings           Booking[]
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
 }
 
 model Booking {
@@ -103,14 +76,13 @@ model Booking {
   user         User        @relation(fields: [userId], references: [id])
   hostelId     Int
   hostel       HostelOwner @relation(fields: [hostelId], references: [id])
-  dealId       Int?
-  deal         Deal?       @relation(fields: [dealId], references: [id])
   checkInDate  DateTime
   checkOutDate DateTime
   totalPrice   Float
-  status       String // "pending", "confirmed", "cancelled", "completed"
+  status       String
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+  dealId       Int?
 }
 
 model Rating {
@@ -138,16 +110,19 @@ model Favorite {
 }
 
 model Package {
-  id            Int                @id @default(autoincrement())
-  name          String
-  description   String             @db.Text
-  price         Float
-  duration      Int // Duration in days
-  hostelOwnerId Int
-  hostelOwner   HostelOwner        @relation(fields: [hostelOwnerId], references: [id])
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  memberships   HostelMembership[]
+  id                 Int                @id @default(autoincrement())
+  name               String
+  description        String             @db.Text
+  price              Float
+  duration           Int
+  services           String             @db.Text
+  mealPlan           String
+  cancellationPolicy String
+  hostelOwnerId      Int
+  hostelOwner        HostelOwner        @relation(fields: [hostelOwnerId], references: [id])
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  memberships        HostelMembership[]
 }
 
 model HostelMembership {
@@ -160,7 +135,7 @@ model HostelMembership {
   package   Package     @relation(fields: [packageId], references: [id])
   startDate DateTime    @default(now())
   endDate   DateTime
-  status    String // e.g., "active", "inactive", "expired"
+  status    String
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   payments  Payment[]
@@ -172,8 +147,8 @@ model Payment {
   id                 Int              @id @default(autoincrement())
   amount             Float
   paymentDate        DateTime         @default(now())
-  paymentMethod      String // e.g., "credit_card", "bank_transfer", "cash"
-  status             String // e.g., "pending", "completed", "failed"
+  paymentMethod      String
+  status             String
   userId             Int
   user               User             @relation(fields: [userId], references: [id])
   hostelMembershipId Int
@@ -183,17 +158,21 @@ model Payment {
 }
 
 model Facility {
-  id            Int         @id @default(autoincrement())
-  name          String
-  hostelOwnerId Int
-  hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id             Int         @id @default(autoincrement())
+  name           String
+  description    String      @db.Text
+  available      Boolean
+  operatingHours String?
+  hostelOwnerId  Int
+  hostelOwner    HostelOwner @relation(fields: [hostelOwnerId], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model GalleryImage {
   id            Int         @id @default(autoincrement())
   imageUrl      String
+  description   String?
   hostelOwnerId Int
   hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
   createdAt     DateTime    @default(now())
@@ -204,6 +183,10 @@ model Meal {
   id            Int         @id @default(autoincrement())
   name          String
   description   String      @db.Text
+  price         Float
+  isVegan       Boolean
+  isGlutenFree  Boolean
+  available     Boolean
   hostelOwnerId Int
   hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
   createdAt     DateTime    @default(now())
@@ -214,6 +197,9 @@ model NearbyAttraction {
   id            Int         @id @default(autoincrement())
   name          String
   distance      String
+  type          String
+  openingHours  String?
+  description   String?     @db.Text
   hostelOwnerId Int
   hostelOwner   HostelOwner @relation(fields: [hostelOwnerId], references: [id])
   createdAt     DateTime    @default(now())
