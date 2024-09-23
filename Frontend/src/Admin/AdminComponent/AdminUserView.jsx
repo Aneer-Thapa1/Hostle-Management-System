@@ -81,7 +81,7 @@ const AdminUserView = () => {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="w-full h-full bg-gray-100 p-6 flex flex-col">
+    <div className="w-full bg-gray-100 p-6 flex flex-col">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
         Manage Hostel Page Content
       </h1>
@@ -95,7 +95,7 @@ const AdminUserView = () => {
           />
         ))}
       </div>
-      <div className="flex-grow bg-white rounded-lg shadow-md p-6 overflow-auto">
+      <div className="flex-grow bg-white rounded-lg shadow-md p-6 ">
         {tabContent[activeTab]}
       </div>
     </div>

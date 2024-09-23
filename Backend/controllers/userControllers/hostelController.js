@@ -107,6 +107,7 @@ const getHostel = async (req, res) => {
     });
   }
 };
+
 const getHostels = async (req, res) => {
   try {
     const {
@@ -115,6 +116,9 @@ const getHostels = async (req, res) => {
       search = "",
       location = "",
       maxPrice,
+      minPrice,
+      sortBy = "price",
+      sortOrder = "asc",
     } = req.query;
     const userId = req.user ? req.user.id : null;
 
@@ -137,10 +141,13 @@ const getHostels = async (req, res) => {
       whereClause.location = { contains: locationLower };
     }
 
-    if (maxPrice) {
+    if (maxPrice || minPrice) {
       whereClause.rooms = {
         some: {
-          price: { lte: parseFloat(maxPrice) },
+          AND: [
+            minPrice ? { price: { gte: parseFloat(minPrice) } } : {},
+            maxPrice ? { price: { lte: parseFloat(maxPrice) } } : {},
+          ],
         },
       };
     }
@@ -157,8 +164,6 @@ const getHostels = async (req, res) => {
             },
           },
         },
-        skip: skip,
-        take: pageSize,
       }),
       prisma.hostelOwner.count({ where: whereClause }),
       userId
@@ -172,7 +177,7 @@ const getHostels = async (req, res) => {
     const favoriteHostelIds = new Set(userFavorites.map((fav) => fav.hostelId));
 
     // Format hostel data and calculate minimum price
-    const formattedHostels = hostels.map((hostel) => ({
+    let formattedHostels = hostels.map((hostel) => ({
       id: hostel.id,
       name: hostel.hostelName,
       location: hostel.location,
@@ -186,14 +191,89 @@ const getHostels = async (req, res) => {
       isFavorite: favoriteHostelIds.has(hostel.id),
     }));
 
-    // Sort the formatted hostels by price
-    formattedHostels.sort((a, b) => a.price - b.price);
+    // Improved sorting algorithm (Quick Sort)
+    const quickSort = (arr, low, high) => {
+      if (low < high) {
+        const pivotIndex = partition(arr, low, high);
+        quickSort(arr, low, pivotIndex - 1);
+        quickSort(arr, pivotIndex + 1, high);
+      }
+    };
+
+    const partition = (arr, low, high) => {
+      const pivot = arr[high][sortBy];
+      let i = low - 1;
+
+      for (let j = low; j < high; j++) {
+        if (
+          (sortOrder === "asc" && arr[j][sortBy] <= pivot) ||
+          (sortOrder === "desc" && arr[j][sortBy] >= pivot)
+        ) {
+          i++;
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      }
+
+      [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+      return i + 1;
+    };
+
+    // Sort the formatted hostels
+    quickSort(formattedHostels, 0, formattedHostels.length - 1);
+
+    // Binary search function to find hostels within a specific price range
+    const binarySearchPrice = (arr, target, comparator) => {
+      let left = 0;
+      let right = arr.length - 1;
+
+      while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        if (comparator(arr[mid].price, target)) {
+          return mid;
+        } else if (arr[mid].price < target) {
+          left = mid + 1;
+        } else {
+          right = mid - 1;
+        }
+      }
+
+      return -1;
+    };
+
+    // Apply binary search if minPrice or maxPrice is specified
+    if (minPrice || maxPrice) {
+      const minPriceValue = parseFloat(minPrice) || 0;
+      const maxPriceValue = parseFloat(maxPrice) || Infinity;
+
+      const lowerBound = binarySearchPrice(
+        formattedHostels,
+        minPriceValue,
+        (price, target) => price >= target
+      );
+      const upperBound = binarySearchPrice(
+        formattedHostels,
+        maxPriceValue,
+        (price, target) => price > target
+      );
+
+      if (lowerBound !== -1) {
+        formattedHostels = formattedHostels.slice(
+          lowerBound,
+          upperBound !== -1 ? upperBound : undefined
+        );
+      } else {
+        formattedHostels = [];
+      }
+    }
+
+    // Apply pagination
+    const paginatedHostels = formattedHostels.slice(skip, skip + pageSize);
 
     res.json({
-      hostels: formattedHostels,
+      hostels: paginatedHostels,
       currentPage: pageNumber,
-      totalPages: Math.ceil(totalCount / pageSize),
-      totalCount: totalCount,
+      totalPages: Math.ceil(formattedHostels.length / pageSize),
+      totalCount: formattedHostels.length,
     });
   } catch (error) {
     console.error("Error fetching hostels:", error);
@@ -253,6 +333,7 @@ const getNearbyHostels = async (req, res) => {
   try {
     const { latitude, longitude, radius = 5, limit = 10 } = req.query;
 
+    const mainHostelId = req.user.user.id;
     // Input validation
     if (!latitude || !longitude) {
       return res.status(400).json({
@@ -265,6 +346,7 @@ const getNearbyHostels = async (req, res) => {
     const lon = parseFloat(longitude);
     const rad = parseFloat(radius);
     const lim = parseInt(limit);
+    const mainId = parseInt(mainHostelId);
 
     if (
       isNaN(lat) ||
@@ -294,20 +376,28 @@ const getNearbyHostels = async (req, res) => {
       });
     }
 
+    if (isNaN(mainId)) {
+      return res.status(400).json({
+        status: "error",
+        message: `Invalid mainHostelId. Received: ${mainHostelId}`,
+      });
+    }
+
     // Fetch nearby hostels using MariaDB compatible query
     const nearbyHostels = await prisma.$queryRaw`
       SELECT 
-        id, 
-        hostelName, 
-        location, 
-        latitude, 
-        longitude, 
+        id,
+        hostelName,
+        location,
+        latitude,
+        longitude,
         mainPhoto,
         ST_Distance_Sphere(
           point(longitude, latitude),
           point(${lon}, ${lat})
         ) / 1000 AS distance
       FROM HostelOwner
+      WHERE id != ${mainId}
       HAVING distance <= ${rad}
       ORDER BY distance
       LIMIT ${lim}

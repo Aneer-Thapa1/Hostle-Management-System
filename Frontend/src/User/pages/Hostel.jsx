@@ -5,19 +5,20 @@ import axios from "axios";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { IoIosStarOutline, IoMdStar, IoMdClose } from "react-icons/io";
-
 import {
   FaMapMarkerAlt,
   FaExpand,
   FaBed,
   FaUsers,
   FaMoneyBillWave,
+  FaSpinner,
 } from "react-icons/fa";
 import HostelInformation from "../components/HostelInformation";
 import PackageSummary from "../components/PackeageSummary";
 import Facilities from "../components/Facilities";
 import Gallery from "../components/Gallery";
 import Meals from "../components/Meals";
+import BookingModal from "../components/BookingModal";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -60,13 +61,13 @@ const fetchHostelData = async (id) => {
 };
 
 const fetchNearbyHostels = async ({ queryKey }) => {
-  const [_, latitude, longitude] = queryKey;
+  const [_, latitude, longitude, mainHostelId] = queryKey;
   if (!latitude || !longitude) {
     throw new Error("Latitude and longitude are required");
   }
   try {
     const response = await axiosInstance.get(`/api/hostel/nearby`, {
-      params: { latitude, longitude, limit: 3 },
+      params: { latitude, longitude, limit: 3, mainHostelId },
       headers: getAuthHeader(),
     });
     return response.data.data;
@@ -80,12 +81,6 @@ const Hostel = () => {
   const [selectedOption, setSelectedOption] = useState("Hostel Information");
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [bookingInfo, setBookingInfo] = useState({
-    checkInDate: "",
-    checkOutDate: "",
-    numberOfGuests: 1,
-    specialRequests: "",
-  });
   const { id } = useParams();
 
   const {
@@ -105,7 +100,7 @@ const Hostel = () => {
     isLoading: isLoadingNearby,
     error: errorNearby,
   } = useQuery(
-    ["nearbyHostels", hostelData?.latitude, hostelData?.longitude],
+    ["nearbyHostels", hostelData?.latitude, hostelData?.longitude, id],
     fetchNearbyHostels,
     {
       enabled: !!hostelData?.latitude && !!hostelData?.longitude,
@@ -132,8 +127,7 @@ const Hostel = () => {
     }
   );
 
-  const handleBookingSubmit = (e) => {
-    e.preventDefault();
+  const handleBookingSubmit = (bookingInfo) => {
     bookingMutation.mutate({
       hostelId: id,
       ...bookingInfo,
@@ -142,7 +136,9 @@ const Hostel = () => {
 
   if (isLoading)
     return (
-      <div className="text-white text-center text-2xl mt-10">Loading...</div>
+      <div className="flex justify-center items-center h-screen">
+        <FaSpinner className="animate-spin text-primaryColor text-4xl" />
+      </div>
     );
   if (error)
     return (
@@ -162,23 +158,20 @@ const Hostel = () => {
       case "Hostel Information":
         return <HostelInformation hostelData={hostelData} />;
       case "Package Summary":
-        return <PackageSummary deals={hostelData.deals} />;
+        return <PackageSummary hostelId={id} />;
       case "Facilities & Activities":
-        return (
-          <Facilities
-            amenities={hostelData.rooms.flatMap((room) => room.amenities)}
-          />
-        );
+        return <Facilities hostelId={id} />;
       case "Gallery":
-        return <Gallery mainPhoto={hostelData.mainPhoto} />;
+        return <Gallery hostelId={id} />;
       case "Meals":
-        return <Meals />;
+        return <Meals hostelId={id} />;
       default:
         return <HostelInformation hostelData={hostelData} />;
     }
   };
+
   const MapModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-75  flex justify-center items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center">
       <div className="bg-white w-11/12 h-5/6 rounded-lg p-4 relative">
         <button
           onClick={() => setIsMapModalOpen(false)}
@@ -204,127 +197,6 @@ const Hostel = () => {
       </div>
     </div>
   );
-
-  const BookingModal = ({ hostelData, onClose, onSubmit }) => {
-    const [bookingInfo, setBookingInfo] = useState({
-      dealId: "",
-      numberOfPersons: 1,
-      durationInMonths: 1,
-      specialRequests: "",
-    });
-
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      onSubmit(bookingInfo);
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
-        <div className="bg-boxColor w-11/12 max-w-md rounded-lg p-6 relative">
-          <button
-            onClick={onClose}
-            className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors duration-200"
-          >
-            <IoMdClose size={24} />
-          </button>
-          <h2 className="text-2xl font-bold text-white mb-4">Book Your Stay</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="dealId" className="block text-gray-300 mb-1">
-                Select Deal
-              </label>
-              <select
-                id="dealId"
-                value={bookingInfo.dealId}
-                onChange={(e) =>
-                  setBookingInfo({ ...bookingInfo, dealId: e.target.value })
-                }
-                className="w-full bg-gray-700 text-white rounded p-2"
-                required
-              >
-                <option value="">Select a deal</option>
-                {hostelData.deals.map((deal) => (
-                  <option key={deal.id} value={deal.id}>
-                    {deal.name} - Rs {deal.price}/month
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label
-                htmlFor="numberOfPersons"
-                className="block text-gray-300 mb-1"
-              >
-                Number of Persons
-              </label>
-              <input
-                type="number"
-                id="numberOfPersons"
-                value={bookingInfo.numberOfPersons}
-                onChange={(e) =>
-                  setBookingInfo({
-                    ...bookingInfo,
-                    numberOfPersons: parseInt(e.target.value),
-                  })
-                }
-                min="1"
-                className="w-full bg-gray-700 text-white rounded p-2"
-                required
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="durationInMonths"
-                className="block text-gray-300 mb-1"
-              >
-                Duration (in months)
-              </label>
-              <input
-                type="number"
-                id="durationInMonths"
-                value={bookingInfo.durationInMonths}
-                onChange={(e) =>
-                  setBookingInfo({
-                    ...bookingInfo,
-                    durationInMonths: parseInt(e.target.value),
-                  })
-                }
-                min="1"
-                className="w-full bg-gray-700 text-white rounded p-2"
-                required
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="specialRequests"
-                className="block text-gray-300 mb-1"
-              >
-                Special Requests
-              </label>
-              <textarea
-                id="specialRequests"
-                value={bookingInfo.specialRequests}
-                onChange={(e) =>
-                  setBookingInfo({
-                    ...bookingInfo,
-                    specialRequests: e.target.value,
-                  })
-                }
-                className="w-full bg-gray-700 text-white rounded p-2"
-                rows="3"
-              ></textarea>
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-primaryColor text-white py-2 rounded hover:bg-primaryColor-dark transition-colors duration-200"
-            >
-              Confirm Booking
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  };
 
   const NearbyHostelCard = ({ hostel }) => (
     <div className="bg-boxColor rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl">
@@ -399,9 +271,7 @@ const Hostel = () => {
                   <div className="flex flex-col items-start gap-2 text-white">
                     <p className="text-gray-400">Price Starts At</p>
                     <p className="text-2xl font-bold text-primaryColor">
-                      Rs{" "}
-                      {hostelData.minDealPrice ||
-                        Math.min(...hostelData.rooms.map((room) => room.price))}
+                      Rs {hostelData.minPrice}
                       <span className="text-sm text-gray-400 ml-1">
                         per month
                       </span>
@@ -411,20 +281,17 @@ const Hostel = () => {
                   <div className="text-white flex flex-col items-end gap-2">
                     <p className="flex items-center">
                       <FaBed className="mr-2 text-primaryColor" />
-                      {hostelData.roomCount || hostelData.rooms.length} Rooms
+                      {hostelData.roomCount} Rooms
                     </p>
                     <p className="flex items-center">
                       <FaUsers className="mr-2 text-primaryColor" />
-                      {hostelData.userCount ||
-                        hostelData.rooms.reduce(
-                          (sum, room) => sum + room.capacity,
-                          0
-                        )}{" "}
-                      Students
+                      {hostelData.userCount} Students
                     </p>
                     <p className="flex items-center">
                       <FaMoneyBillWave className="mr-2 text-primaryColor" />
-                      {hostelData.minDealPrice ? "Deal Available" : "No Deals"}
+                      {hostelData.packages && hostelData.packages.length > 0
+                        ? "Packages Available"
+                        : "No Packages"}
                     </p>
                   </div>
                 </div>
@@ -518,7 +385,13 @@ const Hostel = () => {
 
       <Footer />
       {isMapModalOpen && <MapModal />}
-      {isBookingModalOpen && <BookingModal />}
+      {isBookingModalOpen && (
+        <BookingModal
+          hostelId={id}
+          onClose={() => setIsBookingModalOpen(false)}
+          onSubmit={handleBookingSubmit}
+        />
+      )}
     </div>
   );
 };

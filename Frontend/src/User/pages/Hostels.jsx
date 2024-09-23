@@ -9,6 +9,7 @@ import {
   FaHeart,
   FaStar,
   FaFilter,
+  FaSortAmountDown,
 } from "react-icons/fa";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -65,6 +66,8 @@ const Hostels = () => {
     location: "",
     maxPrice: "",
   });
+  const [sortCriteria, setSortCriteria] = useState("price");
+  const [sortOrder, setSortOrder] = useState("asc");
   const [userLocation, setUserLocation] = useState(null);
   const mapRef = useRef(null);
 
@@ -78,38 +81,78 @@ const Hostels = () => {
       const response = await axios.get(`${baseURL}/api/hostel/all-hostels`, {
         headers: getAuthHeader(),
       });
-
-      console.log(response);
       setAllHostels(response.data.hostels);
     } catch (error) {
-      console.log(error);
       console.error("Error fetching all hostels:", error);
     }
   }, []);
 
+  const searchAlgorithm = (hostels, query) => {
+    const lowercaseQuery = query.toLowerCase();
+    return hostels.filter(
+      (hostel) =>
+        hostel.name.toLowerCase().includes(lowercaseQuery) ||
+        hostel.location.toLowerCase().includes(lowercaseQuery)
+    );
+  };
+
+  const sortAlgorithm = (hostels, criteria, order) => {
+    return [...hostels].sort((a, b) => {
+      if (criteria === "price") {
+        return order === "asc" ? a.price - b.price : b.price - a.price;
+      } else if (criteria === "rating") {
+        return order === "asc" ? a.rating - b.rating : b.rating - a.rating;
+      }
+      return 0;
+    });
+  };
+
   const fetchDisplayedHostels = useCallback(
     async (reset = false) => {
       try {
-        const response = await axios.get(`${baseURL}/api/hostel/hostels`, {
-          params: {
-            page: reset ? 1 : page,
-            limit: 9,
-            search: searchQuery,
-            ...filters,
-          },
-          headers: getAuthHeader(),
-        });
-        const newHostels = response.data.hostels;
-        setDisplayedHostels((prev) =>
-          reset ? newHostels : [...prev, ...newHostels]
+        let filteredHostels = allHostels;
+
+        // Apply search
+        if (searchQuery) {
+          filteredHostels = searchAlgorithm(filteredHostels, searchQuery);
+        }
+
+        // Apply filters
+        if (filters.location) {
+          filteredHostels = filteredHostels.filter((hostel) =>
+            hostel.location
+              .toLowerCase()
+              .includes(filters.location.toLowerCase())
+          );
+        }
+        if (filters.maxPrice) {
+          filteredHostels = filteredHostels.filter(
+            (hostel) => hostel.price <= parseFloat(filters.maxPrice)
+          );
+        }
+
+        // Apply sorting
+        filteredHostels = sortAlgorithm(
+          filteredHostels,
+          sortCriteria,
+          sortOrder
         );
-        setHasMore(page < response.data.totalPages);
+
+        // Pagination
+        const startIndex = reset ? 0 : (page - 1) * 9;
+        const endIndex = startIndex + 9;
+        const paginatedHostels = filteredHostels.slice(startIndex, endIndex);
+
+        setDisplayedHostels((prev) =>
+          reset ? paginatedHostels : [...prev, ...paginatedHostels]
+        );
+        setHasMore(endIndex < filteredHostels.length);
         setPage((prev) => (reset ? 2 : prev + 1));
       } catch (error) {
         console.error("Error fetching displayed hostels:", error);
       }
     },
-    [page, searchQuery, filters]
+    [allHostels, page, searchQuery, filters, sortCriteria, sortOrder]
   );
 
   const fetchFavorites = useCallback(async () => {
@@ -145,7 +188,7 @@ const Hostels = () => {
 
   useEffect(() => {
     fetchDisplayedHostels(true);
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, sortCriteria, sortOrder]);
 
   const handleSearch = () => {
     fetchDisplayedHostels(true);
@@ -159,6 +202,12 @@ const Hostels = () => {
   const applyFilters = () => {
     fetchDisplayedHostels(true);
     setFilterOpen(false);
+  };
+
+  const handleSort = (criteria) => {
+    setSortCriteria(criteria);
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    fetchDisplayedHostels(true);
   };
 
   const toggleFavorite = async (hostelId) => {
@@ -277,13 +326,29 @@ const Hostels = () => {
         <section className="mb-16">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold">Available Hostels</h2>
-            <button
-              onClick={() => setFilterOpen(!filterOpen)}
-              className="flex items-center justify-center p-3 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition duration-300"
-            >
-              <FaFilter className="mr-2" />
-              Filters
-            </button>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => handleSort("price")}
+                className="flex items-center justify-center p-3 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition duration-300"
+              >
+                <FaSortAmountDown className="mr-2" />
+                Sort by Price
+              </button>
+              <button
+                onClick={() => handleSort("rating")}
+                className="flex items-center justify-center p-3 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition duration-300"
+              >
+                <FaSortAmountDown className="mr-2" />
+                Sort by Rating
+              </button>
+              <button
+                onClick={() => setFilterOpen(!filterOpen)}
+                className="flex items-center justify-center p-3 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition duration-300"
+              >
+                <FaFilter className="mr-2" />
+                Filters
+              </button>
+            </div>
           </div>
 
           {filterOpen && (
