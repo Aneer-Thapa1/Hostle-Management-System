@@ -2,10 +2,10 @@ import React from "react";
 import {
   FaBed,
   FaMapMarkerAlt,
-  FaClock,
-  FaMoneyBillWave,
-  FaLanguage,
-  FaLeaf,
+  FaPhone,
+  FaEnvelope,
+  FaStar,
+  FaInfoCircle,
 } from "react-icons/fa";
 
 const HostelInformation = ({ hostelData }) => {
@@ -35,120 +35,53 @@ const HostelInformation = ({ hostelData }) => {
 
       <InfoSection
         title="Basic Details"
-        icon={<FaBed className="text-primaryColor" />}
+        icon={<FaInfoCircle className="text-primaryColor" />}
       >
-        <InfoItem label="Name" value={hostelData.hostelName} />
-        <InfoItem label="Type" value={hostelData.type} />
-        <InfoItem label="Established" value={hostelData.establishedYear} />
+        <InfoItem label="Hostel Name" value={hostelData.hostelName} />
+        <InfoItem label="Owner Name" value={hostelData.ownerName} />
+        <InfoItem label="Email" value={hostelData.email} />
+        <InfoItem label="Contact" value={hostelData.contact} />
       </InfoSection>
 
       <InfoSection
-        title="Location & Accessibility"
+        title="Location"
         icon={<FaMapMarkerAlt className="text-primaryColor" />}
       >
+        <InfoItem label="Location" value={hostelData.location} />
         <InfoItem label="Address" value={hostelData.address} />
-        <InfoItem
-          label="Nearest Landmarks"
-          value={hostelData.nearestLandmarks}
-        />
-        <InfoItem
-          label="Distance from City Center"
-          value={hostelData.distanceFromCenter}
-        />
-        <InfoItem
-          label="Nearest Public Transport"
-          value={hostelData.nearestTransport}
-        />
+        <InfoItem label="Latitude" value={hostelData.latitude} />
+        <InfoItem label="Longitude" value={hostelData.longitude} />
       </InfoSection>
 
       <InfoSection
-        title="Accommodation"
-        icon={<FaBed className="text-primaryColor" />}
+        title="Description"
+        icon={<FaInfoCircle className="text-primaryColor" />}
       >
-        <InfoItem label="Total Capacity" value={hostelData.totalCapacity} />
-        <InfoItem label="Room Types" value={hostelData.roomTypes?.join(", ")} />
-        <InfoItem label="Bed Types" value={hostelData.bedTypes?.join(", ")} />
+        <p className="text-gray-300">{hostelData.description}</p>
       </InfoSection>
 
       <InfoSection
-        title="Facilities & Amenities"
-        icon={<FaBed className="text-primaryColor" />}
+        title="Rating"
+        icon={<FaStar className="text-primaryColor" />}
       >
-        {hostelData.amenities && hostelData.amenities.length > 0 ? (
-          <ul className="list-disc list-inside text-gray-300">
-            {hostelData.amenities.map((amenity, index) => (
-              <li key={index}>{amenity}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-300">No amenities specified</p>
-        )}
+        <InfoItem label="Average Rating" value={hostelData.avgRating} />
       </InfoSection>
 
-      <InfoSection
-        title="Services"
-        icon={<FaBed className="text-primaryColor" />}
-      >
-        {hostelData.services && hostelData.services.length > 0 ? (
-          <ul className="list-disc list-inside text-gray-300">
-            {hostelData.services.map((service, index) => (
-              <li key={index}>{service}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-300">No services specified</p>
-        )}
-      </InfoSection>
-
-      <InfoSection
-        title="Rules & Policies"
-        icon={<FaClock className="text-primaryColor" />}
-      >
-        <InfoItem label="Check-in Time" value={hostelData.checkInTime} />
-        <InfoItem label="Check-out Time" value={hostelData.checkOutTime} />
-        <InfoItem label="Curfew" value={hostelData.curfew || "No curfew"} />
-        <InfoItem label="Age Restrictions" value={hostelData.ageRestrictions} />
-        <InfoItem label="Pet Policy" value={hostelData.petPolicy} />
-      </InfoSection>
-
-      <InfoSection
-        title="Payment Information"
-        icon={<FaMoneyBillWave className="text-primaryColor" />}
-      >
-        <InfoItem
-          label="Accepted Payment Methods"
-          value={hostelData.paymentMethods?.join(", ")}
-        />
-        <InfoItem
-          label="Cancellation Policy"
-          value={hostelData.cancellationPolicy}
-        />
-      </InfoSection>
-
-      <InfoSection
-        title="Additional Information"
-        icon={<FaLanguage className="text-primaryColor" />}
-      >
-        <InfoItem
-          label="Languages Spoken"
-          value={hostelData.languagesSpoken?.join(", ")}
-        />
-        <InfoItem
-          label="Sustainability Practices"
-          value={hostelData.sustainabilityPractices}
-        />
-        <InfoItem
-          label="Local Recommendations"
-          value={hostelData.localRecommendations}
-        />
-      </InfoSection>
-
-      {hostelData.additionalNotes && (
+      {hostelData.rooms && hostelData.rooms.length > 0 && (
         <InfoSection
-          title="Additional Notes"
-          icon={<FaLeaf className="text-primaryColor" />}
+          title="Rooms"
+          icon={<FaBed className="text-primaryColor" />}
         >
-          <p className="text-gray-300">{hostelData.additionalNotes}</p>
+          {hostelData.rooms.map((room, index) => (
+            <div key={index} className="mb-2 text-gray-300">
+              <p>
+                <strong>Room {room.roomIdentifier}</strong>
+              </p>
+              <p>Type: {room.type}</p>
+              <p>Capacity: {room.capacity}</p>
+              <p>Price: ${room.price}</p>
+            </div>
+          ))}
         </InfoSection>
       )}
     </div>

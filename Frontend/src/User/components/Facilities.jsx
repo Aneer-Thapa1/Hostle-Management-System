@@ -9,8 +9,8 @@ import {
   FaGamepad,
   FaSpinner,
   FaExclamationCircle,
+  FaInfoCircle,
 } from "react-icons/fa";
-// import ContentHeader from "./ContentHeader";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
@@ -26,6 +26,7 @@ const fetchFacilities = async () => {
       Authorization: `Bearer ${token}`,
     },
   });
+  console.log("API Response:", response.data); // Debug log
   return response.data;
 };
 
@@ -37,6 +38,8 @@ const Facilities = () => {
   } = useQuery("facilities", fetchFacilities, {
     refetchOnWindowFocus: false,
     retry: 1,
+    onSuccess: (data) => console.log("Query Successful, Data:", data), // Debug log
+    onError: (error) => console.error("Query Error:", error), // Debug log
   });
 
   const getIconForFacility = (facilityName) => {
@@ -94,8 +97,13 @@ const Facilities = () => {
             ))}
           </div>
         ) : (
-          <div className="text-gray-400 text-center py-8">
-            No facilities information available at the moment.
+          <div className="text-gray-400 text-center py-8 flex flex-col items-center">
+            <FaInfoCircle className="text-4xl mb-2" />
+            <p>No facilities information available at the moment.</p>
+            <p className="mt-2 text-sm">
+              This could be because no facilities have been added yet, or there
+              might be an issue with the data retrieval.
+            </p>
           </div>
         )}
       </div>

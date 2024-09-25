@@ -24,21 +24,52 @@ const getHostel = async (req, res) => {
             dateAvailable: true,
           },
         },
-        deals: {
+        packages: {
           select: {
             id: true,
             name: true,
-            startDate: true,
-            endDate: true,
             description: true,
-            packageType: true,
-            basePrice: true,
-            discountPrice: true,
-            maxOccupancy: true,
-            amenities: true,
-            features: true,
-            isActive: true,
-            termsAndConditions: true,
+            price: true,
+            duration: true,
+            services: true,
+            mealPlan: true,
+          },
+        },
+        facilities: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            available: true,
+            operatingHours: true,
+          },
+        },
+        galleryImages: {
+          select: {
+            id: true,
+            imageUrl: true,
+            description: true,
+          },
+        },
+        meals: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            isVegan: true,
+            isGlutenFree: true,
+            available: true,
+          },
+        },
+        nearbyAttractions: {
+          select: {
+            id: true,
+            name: true,
+            distance: true,
+            type: true,
+            openingHours: true,
+            description: true,
           },
         },
       },
@@ -52,17 +83,27 @@ const getHostel = async (req, res) => {
       });
     }
 
-    // Parse amenities JSON string for each room
+    // Safely parse amenities JSON string for each room
     hostelData.rooms = hostelData.rooms.map((room) => ({
       ...room,
-      amenities: room.amenities ? JSON.parse(room.amenities) : [],
+      amenities: safeJsonParse(room.amenities, []),
     }));
 
-    // Calculate minimum price from deals
-    const minDealPrice =
-      hostelData.deals.length > 0
-        ? Math.min(...hostelData.deals.map((deal) => deal.discountPrice))
-        : null;
+    // Safely parse services JSON string for each package
+    hostelData.packages = hostelData.packages.map((pkg) => ({
+      ...pkg,
+      services: safeJsonParse(pkg.services, []),
+    }));
+
+    // Calculate minimum price from rooms and packages
+    const minRoomPrice = Math.min(
+      ...hostelData.rooms.map((room) => room.price)
+    );
+    const minPackagePrice =
+      hostelData.packages.length > 0
+        ? Math.min(...hostelData.packages.map((pkg) => pkg.price))
+        : Infinity;
+    const minPrice = Math.min(minRoomPrice, minPackagePrice);
 
     // Count number of rooms
     const roomCount = hostelData.rooms.length;
@@ -86,9 +127,14 @@ const getHostel = async (req, res) => {
       longitude: hostelData.longitude,
       description: hostelData.description,
       mainPhoto: hostelData.mainPhoto,
+      avgRating: hostelData.avgRating,
       rooms: hostelData.rooms,
-      deals: hostelData.deals,
-      minDealPrice: minDealPrice,
+      packages: hostelData.packages,
+      facilities: hostelData.facilities,
+      galleryImages: hostelData.galleryImages,
+      meals: hostelData.meals,
+      nearbyAttractions: hostelData.nearbyAttractions,
+      minPrice: minPrice,
       roomCount: roomCount,
       totalCapacity: totalCapacity,
     };
@@ -107,6 +153,16 @@ const getHostel = async (req, res) => {
     });
   }
 };
+
+// Helper function to safely parse JSON
+function safeJsonParse(jsonString, defaultValue) {
+  try {
+    return jsonString ? JSON.parse(jsonString) : defaultValue;
+  } catch (error) {
+    console.warn("Failed to parse JSON string:", jsonString);
+    return defaultValue;
+  }
+}
 
 const getHostels = async (req, res) => {
   try {
@@ -141,29 +197,47 @@ const getHostels = async (req, res) => {
       whereClause.location = { contains: locationLower };
     }
 
-    if (maxPrice || minPrice) {
-      whereClause.rooms = {
-        some: {
-          AND: [
-            minPrice ? { price: { gte: parseFloat(minPrice) } } : {},
-            maxPrice ? { price: { lte: parseFloat(maxPrice) } } : {},
-          ],
-        },
-      };
-    }
-
-    // Fetch hostels and user's favorites
+    // Fetch hostels with their packages and other related data
     const [hostels, totalCount, userFavorites] = await Promise.all([
       prisma.hostelOwner.findMany({
         where: whereClause,
         include: {
+          packages: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              duration: true,
+            },
+          },
           rooms: {
             select: {
+              id: true,
+              roomIdentifier: true,
               price: true,
-              amenities: true,
+              capacity: true,
+            },
+          },
+          facilities: {
+            select: {
+              name: true,
+              available: true,
+            },
+          },
+          nearbyAttractions: {
+            select: {
+              name: true,
+              distance: true,
+            },
+          },
+          galleryImages: {
+            select: {
+              imageUrl: true,
             },
           },
         },
+        skip,
+        take: pageSize,
       }),
       prisma.hostelOwner.count({ where: whereClause }),
       userId
@@ -176,104 +250,81 @@ const getHostels = async (req, res) => {
 
     const favoriteHostelIds = new Set(userFavorites.map((fav) => fav.hostelId));
 
-    // Format hostel data and calculate minimum price
-    let formattedHostels = hostels.map((hostel) => ({
-      id: hostel.id,
-      name: hostel.hostelName,
-      location: hostel.location,
-      description: hostel.description,
-      price: Math.min(...hostel.rooms.map((room) => room.price)),
-      rating: hostel.avgRating || 0,
-      image: hostel.mainPhoto || "default_image_url",
-      amenities: [
-        ...new Set(hostel.rooms.flatMap((room) => JSON.parse(room.amenities))),
-      ],
-      isFavorite: favoriteHostelIds.has(hostel.id),
-    }));
+    // Format hostel data and find the lowest package price
+    const formattedHostels = hostels.map((hostel) => {
+      const lowestPackagePrice =
+        hostel.packages.length > 0
+          ? Math.min(...hostel.packages.map((pkg) => pkg.price))
+          : null;
 
-    // Improved sorting algorithm (Quick Sort)
-    const quickSort = (arr, low, high) => {
-      if (low < high) {
-        const pivotIndex = partition(arr, low, high);
-        quickSort(arr, low, pivotIndex - 1);
-        quickSort(arr, pivotIndex + 1, high);
-      }
-    };
+      const lowestRoomPrice =
+        hostel.rooms.length > 0
+          ? Math.min(...hostel.rooms.map((room) => room.price))
+          : null;
 
-    const partition = (arr, low, high) => {
-      const pivot = arr[high][sortBy];
-      let i = low - 1;
+      const lowestPrice =
+        lowestPackagePrice !== null && lowestRoomPrice !== null
+          ? Math.min(lowestPackagePrice, lowestRoomPrice)
+          : lowestPackagePrice || lowestRoomPrice;
 
-      for (let j = low; j < high; j++) {
-        if (
-          (sortOrder === "asc" && arr[j][sortBy] <= pivot) ||
-          (sortOrder === "desc" && arr[j][sortBy] >= pivot)
-        ) {
-          i++;
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-      }
+      console.log(`Hostel ID: ${hostel.id}`);
+      console.log(`Lowest Package Price: ${lowestPackagePrice}`);
+      console.log(`Lowest Room Price: ${lowestRoomPrice}`);
+      console.log(`Final Lowest Price: ${lowestPrice}`);
 
-      [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
-      return i + 1;
-    };
+      return {
+        id: hostel.id,
+        name: hostel.hostelName,
+        ownerName: hostel.ownerName,
+        location: hostel.location,
+        address: hostel.address,
+        latitude: hostel.latitude,
+        longitude: hostel.longitude,
+        description: hostel.description,
+        price: lowestPrice,
+        rating: hostel.avgRating || 0,
+        image: hostel.mainPhoto,
+        facilities: hostel.facilities
+          .filter((facility) => facility.available)
+          .map((facility) => facility.name),
+        nearbyAttractions: hostel.nearbyAttractions.map((attraction) => ({
+          name: attraction.name,
+          distance: attraction.distance,
+        })),
+        galleryImages: hostel.galleryImages.map((image) => image.imageUrl),
+        isFavorite: favoriteHostelIds.has(hostel.id),
+        packageCount: hostel.packages.length,
+        roomCount: hostel.rooms.length,
+      };
+    });
 
-    // Sort the formatted hostels
-    quickSort(formattedHostels, 0, formattedHostels.length - 1);
-
-    // Binary search function to find hostels within a specific price range
-    const binarySearchPrice = (arr, target, comparator) => {
-      let left = 0;
-      let right = arr.length - 1;
-
-      while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        if (comparator(arr[mid].price, target)) {
-          return mid;
-        } else if (arr[mid].price < target) {
-          left = mid + 1;
-        } else {
-          right = mid - 1;
-        }
-      }
-
-      return -1;
-    };
-
-    // Apply binary search if minPrice or maxPrice is specified
+    // Apply price filtering
+    let filteredHostels = formattedHostels;
     if (minPrice || maxPrice) {
-      const minPriceValue = parseFloat(minPrice) || 0;
-      const maxPriceValue = parseFloat(maxPrice) || Infinity;
-
-      const lowerBound = binarySearchPrice(
-        formattedHostels,
-        minPriceValue,
-        (price, target) => price >= target
+      filteredHostels = formattedHostels.filter(
+        (hostel) =>
+          hostel.price !== null &&
+          (!minPrice || hostel.price >= parseFloat(minPrice)) &&
+          (!maxPrice || hostel.price <= parseFloat(maxPrice))
       );
-      const upperBound = binarySearchPrice(
-        formattedHostels,
-        maxPriceValue,
-        (price, target) => price > target
-      );
-
-      if (lowerBound !== -1) {
-        formattedHostels = formattedHostels.slice(
-          lowerBound,
-          upperBound !== -1 ? upperBound : undefined
-        );
-      } else {
-        formattedHostels = [];
-      }
     }
 
-    // Apply pagination
-    const paginatedHostels = formattedHostels.slice(skip, skip + pageSize);
+    // Sorting
+    const sortedHostels = filteredHostels.sort((a, b) => {
+      if (a[sortBy] === null) return 1;
+      if (b[sortBy] === null) return -1;
+      if (sortOrder === "asc") {
+        return a[sortBy] - b[sortBy];
+      } else {
+        return b[sortBy] - a[sortBy];
+      }
+    });
 
     res.json({
-      hostels: paginatedHostels,
+      hostels: sortedHostels,
       currentPage: pageNumber,
-      totalPages: Math.ceil(formattedHostels.length / pageSize),
-      totalCount: formattedHostels.length,
+      totalPages: Math.ceil(filteredHostels.length / pageSize),
+      totalCount: filteredHostels.length,
     });
   } catch (error) {
     console.error("Error fetching hostels:", error);
@@ -457,59 +508,8 @@ const getNearbyHostels = async (req, res) => {
   }
 };
 
-const allHostels = async (req, res) => {
-  try {
-    const hostels = await prisma.hostelOwner.findMany({
-      select: {
-        id: true,
-        hostelName: true,
-        latitude: true,
-        longitude: true,
-        location: true,
-        address: true,
-        avgRating: true,
-        mainPhoto: true,
-        rooms: {
-          select: {
-            price: true,
-          },
-          orderBy: {
-            price: "asc",
-          },
-          take: 1,
-        },
-      },
-    });
-
-    const formattedHostels = hostels.map((hostel) => ({
-      id: hostel.id,
-      name: hostel.hostelName,
-      latitude: hostel.latitude,
-      longitude: hostel.longitude,
-      location: hostel.location,
-      address: hostel.address,
-      rating: hostel.avgRating || 0,
-      image: hostel.mainPhoto,
-      price: hostel.rooms[0]?.price || null,
-    }));
-
-    res.status(200).json({
-      status: "success",
-      results: formattedHostels.length,
-      hostels: formattedHostels,
-    });
-  } catch (error) {
-    console.error("Error fetching all hostels:", error);
-    res.status(500).json({
-      status: "error",
-      message: "An error occurred while fetching hostels",
-    });
-  }
-};
-
 module.exports = {
   getHostel,
   getHostels,
   getNearbyHostels,
-  allHostels,
 };

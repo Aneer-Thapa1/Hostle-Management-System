@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "react-query";
 import axios from "axios";
 import { IoMdClose } from "react-icons/io";
-import { FaInfoCircle } from "react-icons/fa";
+import { FaInfoCircle, FaExclamationTriangle } from "react-icons/fa";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
@@ -22,7 +22,6 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
     packageId: "",
     numberOfPersons: 1,
     startDate: "",
-    endDate: "",
     bedPreference: "any",
     specialRequests: "",
     agreedToTerms: false,
@@ -30,6 +29,10 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
 
   const [showPackageInfo, setShowPackageInfo] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const {
     data: packages,
@@ -47,6 +50,10 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
     }
   }, [packages]);
 
+  useEffect(() => {
+    calculateTotalPrice();
+  }, [bookingInfo, selectedPackage]);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setBookingInfo((prev) => ({
@@ -55,7 +62,7 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
     }));
 
     if (name === "packageId") {
-      const selected = packages.find((pkg) => pkg.id === value);
+      const selected = packages.find((pkg) => pkg.id === parseInt(value));
       setSelectedPackage(selected);
     }
   };
@@ -63,23 +70,23 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!bookingInfo.agreedToTerms) {
-      alert("Please agree to the terms and conditions before booking.");
+      setErrorMessage(
+        "Please agree to the terms and conditions before booking."
+      );
+      setShowErrorDialog(true);
       return;
     }
-    onSubmit(bookingInfo);
+    setShowConfirmDialog(true);
   };
 
   const calculateTotalPrice = () => {
-    if (!selectedPackage) return 0;
-    const days = Math.ceil(
-      (new Date(bookingInfo.endDate) - new Date(bookingInfo.startDate)) /
-        (1000 * 60 * 60 * 24)
-    );
-    return (
-      selectedPackage.price *
-      bookingInfo.numberOfPersons *
-      (days / selectedPackage.duration)
-    );
+    if (!selectedPackage || !bookingInfo.startDate) {
+      setTotalPrice(0);
+      return;
+    }
+
+    const calculatedPrice = selectedPackage.price * bookingInfo.numberOfPersons;
+    setTotalPrice(calculatedPrice);
   };
 
   if (isLoading) return <div className="text-white">Loading packages...</div>;
@@ -132,42 +139,27 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
                 <h4 className="font-bold">{selectedPackage.name}</h4>
                 <p>{selectedPackage.description}</p>
                 <ul className="list-disc list-inside">
-                  {selectedPackage.amenities.map((amenity, index) => (
-                    <li key={index}>{amenity}</li>
-                  ))}
+                  {selectedPackage.services &&
+                    selectedPackage.services.map((service, index) => (
+                      <li key={index}>{service}</li>
+                    ))}
                 </ul>
               </div>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="startDate" className="block text-gray-300 mb-1">
-                Check-in Date
-              </label>
-              <input
-                type="date"
-                id="startDate"
-                name="startDate"
-                value={bookingInfo.startDate}
-                onChange={handleInputChange}
-                className="w-full bg-gray-700 text-white rounded p-2"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="endDate" className="block text-gray-300 mb-1">
-                Check-out Date
-              </label>
-              <input
-                type="date"
-                id="endDate"
-                name="endDate"
-                value={bookingInfo.endDate}
-                onChange={handleInputChange}
-                className="w-full bg-gray-700 text-white rounded p-2"
-                required
-              />
-            </div>
+          <div>
+            <label htmlFor="startDate" className="block text-gray-300 mb-1">
+              Check-in Date
+            </label>
+            <input
+              type="date"
+              id="startDate"
+              name="startDate"
+              value={bookingInfo.startDate}
+              onChange={handleInputChange}
+              className="w-full bg-gray-700 text-white rounded p-2"
+              required
+            />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -245,8 +237,18 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
             <h3 className="text-lg font-bold text-white mb-2">
               Booking Summary
             </h3>
+            <p className="text-gray-300">Package: {selectedPackage?.name}</p>
             <p className="text-gray-300">
-              Total Price: Rs {calculateTotalPrice().toFixed(2)}
+              Number of Persons: {bookingInfo.numberOfPersons}
+            </p>
+            <p className="text-gray-300">
+              Duration: {selectedPackage?.duration} days
+            </p>
+            <p className="text-gray-300">
+              Check-in Date: {bookingInfo.startDate || "Not specified"}
+            </p>
+            <p className="text-gray-300 font-bold">
+              Total Price: Rs {totalPrice.toFixed(2)}
             </p>
           </div>
           <button
@@ -257,6 +259,51 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
           </button>
         </form>
       </div>
+
+      {showErrorDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-boxColor p-6 rounded-lg max-w-sm">
+            <FaExclamationTriangle className="text-yellow-500 text-4xl mb-4 mx-auto" />
+            <p className="text-white text-center mb-4">{errorMessage}</p>
+            <button
+              onClick={() => setShowErrorDialog(false)}
+              className="w-full bg-primaryColor text-white py-2 rounded hover:bg-primaryColor-dark transition-colors duration-200"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-boxColor p-6 rounded-lg max-w-sm">
+            <h3 className="text-xl font-bold text-white mb-4">
+              Confirm Booking
+            </h3>
+            <p className="text-gray-300 mb-4">
+              Are you sure you want to proceed with this booking?
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmDialog(false);
+                  onSubmit({ ...bookingInfo, totalPrice });
+                }}
+                className="px-4 py-2 bg-primaryColor text-white rounded hover:bg-primaryColor-dark transition-colors duration-200"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

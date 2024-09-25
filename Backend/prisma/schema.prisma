@@ -110,19 +110,18 @@ model Favorite {
 }
 
 model Package {
-  id                 Int                @id @default(autoincrement())
-  name               String
-  description        String             @db.Text
-  price              Float
-  duration           Int
-  services           String             @db.Text
-  mealPlan           String
-  cancellationPolicy String
-  hostelOwnerId      Int
-  hostelOwner        HostelOwner        @relation(fields: [hostelOwnerId], references: [id])
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  memberships        HostelMembership[]
+  id            Int                @id @default(autoincrement())
+  name          String
+  description   String             @db.Text
+  price         Float
+  duration      Int
+  services      String             @db.Text
+  mealPlan      String
+  hostelOwnerId Int
+  hostelOwner   HostelOwner        @relation(fields: [hostelOwnerId], references: [id])
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  memberships   HostelMembership[]
 }
 
 model HostelMembership {

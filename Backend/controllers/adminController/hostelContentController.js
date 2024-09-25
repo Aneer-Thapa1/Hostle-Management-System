@@ -214,7 +214,7 @@ const hostelContentController = {
       const facilities = await prisma.facility.findMany({
         where: { hostelOwnerId: hostelId },
       });
-
+      console.log(facilities);
       res.json(facilities);
     } catch (error) {
       console.error("Error fetching facilities:", error);

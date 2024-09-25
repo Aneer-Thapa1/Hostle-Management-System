@@ -78,12 +78,14 @@ const Hostels = () => {
 
   const fetchAllHostels = useCallback(async () => {
     try {
-      const response = await axios.get(`${baseURL}/api/hostel/all-hostels`, {
+      const response = await axios.get(`${baseURL}/api/hostel/hostels`, {
         headers: getAuthHeader(),
       });
       setAllHostels(response.data.hostels);
+      return response.data.hostels;
     } catch (error) {
       console.error("Error fetching all hostels:", error);
+      return [];
     }
   }, []);
 
@@ -170,8 +172,13 @@ const Hostels = () => {
   }, []);
 
   useEffect(() => {
-    fetchAllHostels();
-    fetchDisplayedHostels(true);
+    const initializeHostels = async () => {
+      const hostels = await fetchAllHostels();
+      setAllHostels(hostels);
+      await fetchDisplayedHostels(true);
+    };
+
+    initializeHostels();
     fetchFavorites();
 
     // Get user's location
@@ -235,6 +242,8 @@ const Hostels = () => {
       console.error("Error toggling favorite:", error);
     }
   };
+
+  console.log(displayedHostels);
 
   return (
     <div className="bg-gray-900 min-h-screen text-white">
@@ -399,7 +408,6 @@ const Hostels = () => {
           </InfiniteScroll>
         </section>
       </main>
-
       <Footer />
     </div>
   );
