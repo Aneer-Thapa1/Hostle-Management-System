@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useHostelApi } from "./useHostelApi";
-import {
-  FaPlus,
-  FaEdit,
-  FaTrash,
-  FaTimes,
-  FaBed,
-  FaUtensils,
-  FaCalendarAlt,
-  FaMoneyBillWave,
-  FaConciergeBell,
-  FaRegWindowClose,
-} from "react-icons/fa";
 
 const PackagesTab = ({ hostelData, setHostelData }) => {
   const { fetchPackages, addPackage, updatePackage, deletePackage } =
@@ -23,7 +11,6 @@ const PackagesTab = ({ hostelData, setHostelData }) => {
     duration: "",
     services: "",
     mealPlan: "",
-    cancellationPolicy: "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
@@ -35,19 +22,73 @@ const PackagesTab = ({ hostelData, setHostelData }) => {
   }, []);
 
   const loadPackages = async () => {
-    // ... (loading logic remains the same)
+    try {
+      setLoading(true);
+      const packages = await fetchPackages();
+      setHostelData((prevData) => ({ ...prevData, packages }));
+      setLoading(false);
+    } catch (err) {
+      console.error("Error loading packages:", err);
+      setError("Failed to load packages. Please try again later.");
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
-    // ... (submit logic remains the same)
+    e.preventDefault();
+    try {
+      if (isEditing) {
+        await updatePackage(packageForm.id, packageForm);
+      } else {
+        await addPackage(packageForm);
+      }
+      await loadPackages();
+      handleCancel();
+    } catch (err) {
+      console.error("Error submitting package:", err);
+      setError("Failed to submit package. Please try again.");
+    }
   };
 
   const handleDeletePackage = async (id) => {
-    // ... (delete logic remains the same)
+    try {
+      await deletePackage(id);
+      await loadPackages();
+    } catch (err) {
+      console.error("Error deleting package:", err);
+      setError("Failed to delete package. Please try again.");
+    }
   };
 
   const openPopup = (pkg = null) => {
-    // ... (openPopup logic remains the same)
+    if (pkg) {
+      setPackageForm(pkg);
+      setIsEditing(true);
+    } else {
+      setPackageForm({
+        name: "",
+        description: "",
+        price: "",
+        duration: "",
+        services: "",
+        mealPlan: "",
+      });
+      setIsEditing(false);
+    }
+    setShowPopup(true);
+  };
+
+  const handleCancel = () => {
+    setShowPopup(false);
+    setPackageForm({
+      name: "",
+      description: "",
+      price: "",
+      duration: "",
+      services: "",
+      mealPlan: "",
+    });
+    setIsEditing(false);
   };
 
   if (loading)
@@ -64,24 +105,61 @@ const PackagesTab = ({ hostelData, setHostelData }) => {
         <h2 className="text-2xl font-semibold text-gray-800">Packages</h2>
         <button
           onClick={() => openPopup()}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center transition duration-300 ease-in-out"
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-300 ease-in-out"
         >
-          <FaPlus className="mr-2" /> Add Package
+          Add Package
         </button>
       </div>
 
-      {/* Package list rendering remains the same */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {hostelData.packages.map((pkg) => (
+          <div
+            key={pkg.id}
+            className="bg-gray-50 p-4 rounded-md shadow-sm flex flex-col"
+          >
+            <h3 className="text-lg font-semibold mb-2 text-gray-800">
+              {pkg.name}
+            </h3>
+            <p className="text-sm text-gray-600 mb-2 flex-grow">
+              {pkg.description}
+            </p>
+            <div className="text-sm mb-1">
+              <span className="font-medium">Price:</span> ${pkg.price}
+            </div>
+            <div className="text-sm mb-1">
+              <span className="font-medium">Duration:</span> {pkg.duration} days
+            </div>
+            <div className="text-sm mb-2">
+              <span className="font-medium">Meal Plan:</span> {pkg.mealPlan}
+            </div>
+            <div className="mt-auto flex justify-end space-x-2">
+              <button
+                onClick={() => openPopup(pkg)}
+                className="text-blue-500 hover:text-blue-700 text-sm"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDeletePackage(pkg.id)}
+                className="text-red-500 hover:text-red-700 text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-8 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative">
             <button
-              onClick={() => setShowPopup(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              onClick={handleCancel}
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
             >
-              <FaTimes size={20} />
+              ×
             </button>
-            <h3 className="text-xl font-semibold mb-6 text-gray-800">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800">
               {isEditing ? "Edit Package" : "Add New Package"}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -92,7 +170,6 @@ const PackagesTab = ({ hostelData, setHostelData }) => {
                 onChange={(e) =>
                   setPackageForm({ ...packageForm, name: e.target.value })
                 }
-                icon={<FaBed />}
               />
               <InputField
                 label="Price"
@@ -102,8 +179,6 @@ const PackagesTab = ({ hostelData, setHostelData }) => {
                 onChange={(e) =>
                   setPackageForm({ ...packageForm, price: e.target.value })
                 }
-                icon={<FaMoneyBillWave />}
-                prefix="$"
               />
               <InputField
                 label="Description"
@@ -126,7 +201,6 @@ const PackagesTab = ({ hostelData, setHostelData }) => {
                   onChange={(e) =>
                     setPackageForm({ ...packageForm, duration: e.target.value })
                   }
-                  icon={<FaCalendarAlt />}
                 />
                 <InputField
                   label="Meal Plan"
@@ -135,7 +209,6 @@ const PackagesTab = ({ hostelData, setHostelData }) => {
                   onChange={(e) =>
                     setPackageForm({ ...packageForm, mealPlan: e.target.value })
                   }
-                  icon={<FaUtensils />}
                 />
               </div>
               <InputField
@@ -146,25 +219,11 @@ const PackagesTab = ({ hostelData, setHostelData }) => {
                   setPackageForm({ ...packageForm, services: e.target.value })
                 }
                 textarea
-                icon={<FaConciergeBell />}
-              />
-              <InputField
-                label="Cancellation Policy"
-                name="cancellationPolicy"
-                value={packageForm.cancellationPolicy}
-                onChange={(e) =>
-                  setPackageForm({
-                    ...packageForm,
-                    cancellationPolicy: e.target.value,
-                  })
-                }
-                textarea
-                icon={<FaRegWindowClose />}
               />
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => setShowPopup(false)}
+                  onClick={handleCancel}
                   className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200"
                 >
                   Cancel
@@ -191,52 +250,36 @@ const InputField = ({
   value,
   onChange,
   textarea = false,
-  icon,
-  prefix,
   ...props
 }) => (
-  <div className="relative">
+  <div>
     <label
       className="block text-sm font-medium text-gray-700 mb-1"
       htmlFor={name}
     >
       {label}
     </label>
-    <div className="relative">
-      {icon && (
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          {React.cloneElement(icon, { className: "text-gray-400 w-4 h-4" })}
-        </div>
-      )}
-      {textarea ? (
-        <textarea
-          className="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
-          id={name}
-          name={name}
-          value={value}
-          onChange={onChange}
-          rows="3"
-          {...props}
-        />
-      ) : (
-        <input
-          className={`w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 ${
-            icon || prefix ? "pl-10" : ""
-          }`}
-          id={name}
-          name={name}
-          type={type}
-          value={value}
-          onChange={onChange}
-          {...props}
-        />
-      )}
-      {prefix && (
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <span className="text-gray-500">{prefix}</span>
-        </div>
-      )}
-    </div>
+    {textarea ? (
+      <textarea
+        className="w-full px-3 py-2 text-sm text-gray-700 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+        id={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+        rows="3"
+        {...props}
+      />
+    ) : (
+      <input
+        className="w-full px-3 py-2 text-sm text-gray-700 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+        id={name}
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        {...props}
+      />
+    )}
   </div>
 );
 

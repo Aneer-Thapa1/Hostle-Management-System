@@ -12,6 +12,9 @@ const AttractionsTab = ({ hostelData, setHostelData }) => {
   const [attractionForm, setAttractionForm] = useState({
     name: "",
     distance: "",
+    type: "",
+    openingHours: "",
+    description: "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
@@ -63,7 +66,13 @@ const AttractionsTab = ({ hostelData, setHostelData }) => {
         }));
       }
       setShowPopup(false);
-      setAttractionForm({ name: "", distance: "" });
+      setAttractionForm({
+        name: "",
+        distance: "",
+        type: "",
+        openingHours: "",
+        description: "",
+      });
       setIsEditing(false);
     } catch (error) {
       console.error("Error handling attraction:", error);
@@ -97,7 +106,13 @@ const AttractionsTab = ({ hostelData, setHostelData }) => {
       setAttractionForm(attraction);
       setIsEditing(true);
     } else {
-      setAttractionForm({ name: "", distance: "" });
+      setAttractionForm({
+        name: "",
+        distance: "",
+        type: "",
+        openingHours: "",
+        description: "",
+      });
       setIsEditing(false);
     }
     setShowPopup(true);
@@ -108,7 +123,7 @@ const AttractionsTab = ({ hostelData, setHostelData }) => {
   if (error) return <div className="text-red-500">Error: {error}</div>;
 
   return (
-    <div className="bg-white rounded-lg  h-full flex flex-col">
+    <div className="bg-white rounded-lg h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Nearby Attractions</h2>
         <button
@@ -131,9 +146,14 @@ const AttractionsTab = ({ hostelData, setHostelData }) => {
                 <h3 className="font-bold text-lg mb-2 text-gray-800">
                   {attraction.name}
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 mb-1">
                   Distance: {attraction.distance}
                 </p>
+                <p className="text-gray-600 mb-1">Type: {attraction.type}</p>
+                <p className="text-gray-600 mb-1">
+                  Opening Hours: {attraction.openingHours}
+                </p>
+                <p className="text-gray-600 mb-4">{attraction.description}</p>
                 <div className="flex justify-end space-x-2">
                   <button
                     onClick={() => openPopup(attraction)}
@@ -183,6 +203,41 @@ const AttractionsTab = ({ hostelData, setHostelData }) => {
                   })
                 }
                 required
+              />
+              <input
+                className="w-full p-2 mb-4 border border-gray-300 rounded text-gray-800"
+                placeholder="Type"
+                value={attractionForm.type}
+                onChange={(e) =>
+                  setAttractionForm({
+                    ...attractionForm,
+                    type: e.target.value,
+                  })
+                }
+                required
+              />
+              <input
+                className="w-full p-2 mb-4 border border-gray-300 rounded text-gray-800"
+                placeholder="Opening Hours"
+                value={attractionForm.openingHours}
+                onChange={(e) =>
+                  setAttractionForm({
+                    ...attractionForm,
+                    openingHours: e.target.value,
+                  })
+                }
+              />
+              <textarea
+                className="w-full p-2 mb-4 border border-gray-300 rounded text-gray-800"
+                placeholder="Description"
+                value={attractionForm.description}
+                onChange={(e) =>
+                  setAttractionForm({
+                    ...attractionForm,
+                    description: e.target.value,
+                  })
+                }
+                rows="3"
               />
               <div className="flex justify-end space-x-2">
                 <button
