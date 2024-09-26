@@ -71,18 +71,20 @@ model Room {
 }
 
 model Booking {
-  id           Int         @id @default(autoincrement())
-  userId       Int
-  user         User        @relation(fields: [userId], references: [id])
-  hostelId     Int
-  hostel       HostelOwner @relation(fields: [hostelId], references: [id])
-  checkInDate  DateTime
-  checkOutDate DateTime
-  totalPrice   Float
-  status       String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  dealId       Int?
+  id               Int         @id @default(autoincrement())
+  userId           Int
+  user             User        @relation(fields: [userId], references: [id])
+  hostelId         Int
+  hostel           HostelOwner @relation(fields: [hostelId], references: [id])
+  packageId        Int
+  package          Package     @relation(fields: [packageId], references: [id])
+  checkInDate      DateTime
+  checkOutDate     DateTime
+  numberOfStudents Int
+  totalPrice       Float
+  status           String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 }
 
 model Rating {
@@ -122,6 +124,7 @@ model Package {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   memberships   HostelMembership[]
+  Booking       Booking[]
 }
 
 model HostelMembership {

@@ -3,6 +3,7 @@ import { useQuery } from "react-query";
 import axios from "axios";
 import { IoMdClose } from "react-icons/io";
 import { FaInfoCircle, FaExclamationTriangle } from "react-icons/fa";
+import { useParams } from "react-router-dom";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
@@ -17,15 +18,20 @@ const fetchPackages = async (hostelId) => {
   return response.data;
 };
 
-const BookingModal = ({ hostelId, onClose, onSubmit }) => {
+const BookingModal = ({ onClose, onSubmit }) => {
+  const { id: hostelId } = useParams();
+  console.log(hostelId);
   const [bookingInfo, setBookingInfo] = useState({
     packageId: "",
-    numberOfPersons: 1,
-    startDate: "",
+    hostelId: hostelId,
+    numberOfPersons: "",
+    checkInDate: "",
     bedPreference: "any",
     specialRequests: "",
     agreedToTerms: false,
   });
+
+  console.log(bookingInfo);
 
   const [showPackageInfo, setShowPackageInfo] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
@@ -41,6 +47,7 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
   } = useQuery(["packages", hostelId], () => fetchPackages(hostelId), {
     refetchOnWindowFocus: false,
     retry: 1,
+    enabled: !!hostelId,
   });
 
   useEffect(() => {
@@ -80,7 +87,7 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
   };
 
   const calculateTotalPrice = () => {
-    if (!selectedPackage || !bookingInfo.startDate) {
+    if (!selectedPackage || !bookingInfo.checkInDate) {
       setTotalPrice(0);
       return;
     }
@@ -148,14 +155,14 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
             )}
           </div>
           <div>
-            <label htmlFor="startDate" className="block text-gray-300 mb-1">
+            <label htmlFor="checkInDate" className="block text-gray-300 mb-1">
               Check-in Date
             </label>
             <input
               type="date"
-              id="startDate"
-              name="startDate"
-              value={bookingInfo.startDate}
+              id="checkInDate"
+              name="checkInDate"
+              value={bookingInfo.checkInDate}
               onChange={handleInputChange}
               className="w-full bg-gray-700 text-white rounded p-2"
               required
@@ -245,7 +252,7 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
               Duration: {selectedPackage?.duration} days
             </p>
             <p className="text-gray-300">
-              Check-in Date: {bookingInfo.startDate || "Not specified"}
+              Check-in Date: {bookingInfo.checkInDate || "Not specified"}
             </p>
             <p className="text-gray-300 font-bold">
               Total Price: Rs {totalPrice.toFixed(2)}
@@ -294,7 +301,13 @@ const BookingModal = ({ hostelId, onClose, onSubmit }) => {
               <button
                 onClick={() => {
                   setShowConfirmDialog(false);
-                  onSubmit({ ...bookingInfo, totalPrice });
+                  onSubmit({
+                    ...bookingInfo,
+                    hostelId: parseInt(hostelId),
+                    packageId: parseInt(bookingInfo.packageId),
+                    numberOfPersons: parseInt(bookingInfo.numberOfPersons),
+                    totalPrice,
+                  });
                 }}
                 className="px-4 py-2 bg-primaryColor text-white rounded hover:bg-primaryColor-dark transition-colors duration-200"
               >
