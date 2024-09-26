@@ -11,86 +11,77 @@ const createBooking = async (req, res) => {
     }
 
     const userId = req.user.user.id;
-    const { hostelId, checkInDate, checkOutDate, dealId } = req.body;
+    const { hostelId, packageId, checkInDate, numberOfPersons, totalPrice } =
+      req.body;
+
+    console.log(
+      userId,
+      hostelId,
+      packageId,
+      checkInDate,
+      numberOfPersons,
+      totalPrice
+    );
 
     // Validate input
-    if (!hostelId || !checkInDate) {
+    if (
+      !hostelId ||
+      !packageId ||
+      !checkInDate ||
+      !numberOfPersons ||
+      totalPrice === undefined
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Parse dates
+    // Parse check-in date
     const parsedCheckInDate = new Date(checkInDate);
-    const parsedCheckOutDate = new Date(checkOutDate);
 
-    // Validate dates
-    if (parsedCheckInDate >= parsedCheckOutDate) {
+    // Validate check-in date
+    if (parsedCheckInDate < new Date()) {
       return res
         .status(400)
-        .json({ message: "Check-out date must be after check-in date" });
+        .json({ message: "Check-in date must be in the future" });
     }
 
-    // Calculate number of nights
-    const nights = Math.ceil(
-      (parsedCheckOutDate - parsedCheckInDate) / (1000 * 60 * 60 * 24)
-    );
-
-    // Fetch hostel and room details
+    // Fetch hostel details
     const hostel = await prisma.hostelOwner.findUnique({
       where: { id: parseInt(hostelId) },
-      include: { rooms: true },
     });
 
     if (!hostel) {
       return res.status(404).json({ message: "Hostel not found" });
     }
 
-    // Find available room
-    const availableRoom = hostel.rooms.find(
-      (room) => room.status === "available"
-    );
+    // Fetch package details
+    const package = await prisma.package.findUnique({
+      where: { id: parseInt(packageId) },
+    });
 
-    if (!availableRoom) {
-      return res
-        .status(400)
-        .json({ message: "No available rooms for the selected dates" });
+    if (!package) {
+      return res.status(404).json({ message: "Package not found" });
     }
 
-    // Calculate total price
-    let totalPrice = availableRoom.price * nights;
-
-    // Apply deal discount if applicable
-    if (dealId) {
-      const deal = await prisma.deal.findUnique({ where: { id: dealId } });
-      if (
-        deal &&
-        deal.startDate <= parsedCheckInDate &&
-        deal.endDate >= parsedCheckOutDate
-      ) {
-        totalPrice *= 1 - deal.discount / 100;
-      }
-    }
+    // Calculate checkout date based on package duration
+    const checkOutDate = new Date(parsedCheckInDate);
+    checkOutDate.setDate(checkOutDate.getDate() + package.duration);
 
     // Create booking
     const booking = await prisma.booking.create({
       data: {
-        userId,
-        hostelId,
-        dealId,
+        userId: parseInt(userId),
+        hostelId: parseInt(hostelId),
+        packageId: parseInt(packageId),
         checkInDate: parsedCheckInDate,
-        checkOutDate: parsedCheckOutDate,
-        totalPrice,
+        checkOutDate: checkOutDate,
+        numberOfStudents: parseInt(numberOfPersons),
+        totalPrice: parseFloat(totalPrice),
         status: "pending",
       },
     });
 
-    // Update room status
-    await prisma.room.update({
-      where: { id: parseInt(availableRoom.id) },
-      data: { status: "occupied" },
-    });
-
     res.status(201).json({
-      message: "Booking created successfully",
+      message: "Booking request created successfully",
       booking,
     });
   } catch (error) {

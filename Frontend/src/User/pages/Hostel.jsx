@@ -262,7 +262,7 @@ const Hostel = () => {
               <img
                 src={hostelData.mainPhoto || "/path/to/default/image.jpg"}
                 alt={hostelData.hostelName}
-                className="w-full h-96 rounded-lg object-cover shadow-lg"
+                className="w-full h-[525px] rounded-lg object-cover shadow-lg"
               />
             </div>
             <div className="w-full md:w-4/12 flex flex-col gap-6">
