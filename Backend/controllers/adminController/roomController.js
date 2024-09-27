@@ -352,10 +352,34 @@ const getRoomAvailability = async (req, res) => {
   }
 };
 
+const getRoomDetails = async (req, res) => {
+  try {
+    const rooms = await prisma.room.findMany({
+      include: {
+        hostelOwner: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.status(200).json({
+      message: "All rooms retrieved successfully",
+      data: rooms,
+    });
+  } catch (error) {
+    console.error("Get all rooms error:", error);
+    res
+      .status(500)
+      .json({ error: "Internal server error", details: error.message });
+  }
+};
+
 module.exports = {
   addRoom,
   getRooms,
   updateRoom,
   deleteRoom,
   getRoomAvailability,
+  getRoomDetails,
 };

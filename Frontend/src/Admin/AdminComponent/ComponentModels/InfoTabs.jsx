@@ -6,9 +6,15 @@ import {
   FaMapMarkerAlt,
   FaEnvelope,
   FaPhone,
+  FaCloudUploadAlt,
 } from "react-icons/fa";
 
 const baseURL = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
+
+const cloudinaryConfig = {
+  cloudName: "dwx7fqwrh",
+  uploadPreset: "Hostel Management",
+};
 
 const InfoTab = () => {
   const [hostelData, setHostelData] = useState(null);
@@ -16,6 +22,7 @@ const InfoTab = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchHostelInfo();
@@ -59,6 +66,29 @@ const InfoTab = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditForm({ ...editForm, [name]: value });
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", cloudinaryConfig.uploadPreset);
+
+    try {
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
+        formData
+      );
+      setEditForm({ ...editForm, mainPhoto: response.data.secure_url });
+    } catch (err) {
+      console.error("Error uploading image:", err);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (loading) {
@@ -214,13 +244,34 @@ const InfoTab = () => {
                   value={editForm.longitude}
                   onChange={handleInputChange}
                 />
-                <InputField
-                  label="Main Photo URL"
-                  name="mainPhoto"
-                  type="url"
-                  value={editForm.mainPhoto}
-                  onChange={handleInputChange}
-                />
+                <div className="col-span-2">
+                  <label className="block text-gray-700 text-xs font-bold mb-1">
+                    Main Photo
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label
+                      htmlFor="image-upload"
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded cursor-pointer flex items-center text-sm transition duration-300 ease-in-out"
+                    >
+                      <FaCloudUploadAlt className="mr-2" />
+                      {uploading ? "Uploading..." : "Upload Image"}
+                    </label>
+                    {editForm.mainPhoto && (
+                      <img
+                        src={editForm.mainPhoto}
+                        alt="Preview"
+                        className="h-10 w-10 object-cover rounded"
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
               <div>
                 <label
