@@ -17,7 +17,6 @@ const getHostel = async (req, res) => {
             floor: true,
             amenities: true,
             status: true,
-            capacity: true,
             description: true,
             price: true,
             roomCondition: true,
@@ -108,9 +107,9 @@ const getHostel = async (req, res) => {
     // Count number of rooms
     const roomCount = hostelData.rooms.length;
 
-    // Count total capacity
+    // Count total capacity (assuming a default capacity if not provided)
     const totalCapacity = hostelData.rooms.reduce(
-      (sum, room) => sum + room.capacity,
+      (sum, room) => sum + (room.capacity || 1),
       0
     );
 
@@ -153,7 +152,6 @@ const getHostel = async (req, res) => {
     });
   }
 };
-
 // Helper function to safely parse JSON
 function safeJsonParse(jsonString, defaultValue) {
   try {
@@ -215,7 +213,6 @@ const getHostels = async (req, res) => {
               id: true,
               roomIdentifier: true,
               price: true,
-              capacity: true,
             },
           },
           facilities: {
@@ -266,11 +263,6 @@ const getHostels = async (req, res) => {
         lowestPackagePrice !== null && lowestRoomPrice !== null
           ? Math.min(lowestPackagePrice, lowestRoomPrice)
           : lowestPackagePrice || lowestRoomPrice;
-
-      console.log(`Hostel ID: ${hostel.id}`);
-      console.log(`Lowest Package Price: ${lowestPackagePrice}`);
-      console.log(`Lowest Room Price: ${lowestRoomPrice}`);
-      console.log(`Final Lowest Price: ${lowestPrice}`);
 
       return {
         id: hostel.id,
@@ -323,8 +315,8 @@ const getHostels = async (req, res) => {
     res.json({
       hostels: sortedHostels,
       currentPage: pageNumber,
-      totalPages: Math.ceil(filteredHostels.length / pageSize),
-      totalCount: filteredHostels.length,
+      totalPages: Math.ceil(totalCount / pageSize),
+      totalCount: totalCount,
     });
   } catch (error) {
     console.error("Error fetching hostels:", error);
@@ -512,4 +504,5 @@ module.exports = {
   getHostel,
   getHostels,
   getNearbyHostels,
+  getFavorites,
 };

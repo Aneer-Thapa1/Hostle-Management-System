@@ -3,165 +3,287 @@ import axios from "axios";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
-const AdminStudent = () => {
-  const [students, setStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
-  const [formData, setFormData] = useState({
+const AdminStudents = () => {
+  const [memberships, setMemberships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [sortField, setSortField] = useState("startDate");
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [newStudent, setNewStudent] = useState({
     name: "",
     email: "",
-    phone: "",
-    roomNumber: "",
+    packageId: "",
   });
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchStudents();
+    fetchMemberships();
   }, []);
 
-  const fetchStudents = async () => {
+  const fetchMemberships = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get(`${apiUrl}/api/students`);
-      setStudents(response.data);
+      const response = await axios.get(
+        `${apiUrl}/api/membership/getMembership`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setMemberships(
+        Array.isArray(response.data.memberships)
+          ? response.data.memberships
+          : [response.data.membership]
+      );
+      setError("");
     } catch (err) {
-      setError("Failed to fetch students");
-      console.error(err);
+      console.error("Failed to fetch memberships:", err);
+      setError("Failed to fetch membership information");
+      setMemberships([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString();
   };
 
-  const handleSubmit = async (e) => {
+  const handleSort = (field) => {
+    if (field === sortField) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const handleAddStudent = async (e) => {
     e.preventDefault();
     try {
-      if (isEditing) {
-        await axios.put(
-          `${apiUrl}/api/students/${selectedStudent.id}`,
-          formData
-        );
-      } else {
-        await axios.post(`${apiUrl}/api/students`, formData);
-      }
-      fetchStudents();
-      resetForm();
-      setShowPopup(false);
+      await axios.post(`${apiUrl}/api/students/addStudent`, newStudent, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setShowAddStudentModal(false);
+      setNewStudent({ name: "", email: "", packageId: "" });
+      fetchMemberships();
     } catch (err) {
-      setError(
-        isEditing ? "Failed to update student" : "Failed to add student"
-      );
-      console.error(err);
+      console.error("Failed to add student:", err);
+      setError("Failed to add student");
     }
   };
 
-  const handleEdit = (student) => {
-    setSelectedStudent(student);
-    setFormData(student);
-    setIsEditing(true);
-    setShowPopup(true);
-  };
+  const sortedMemberships = [...memberships].sort((a, b) => {
+    if (a[sortField] < b[sortField]) return sortDirection === "asc" ? -1 : 1;
+    if (a[sortField] > b[sortField]) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this student?")) {
-      try {
-        await axios.delete(`${apiUrl}/api/students/${id}`);
-        fetchStudents();
-      } catch (err) {
-        setError("Failed to delete student");
-        console.error(err);
-      }
-    }
-  };
+  const filteredMemberships = sortedMemberships.filter(
+    (membership) => filterStatus === "all" || membership.status === filterStatus
+  );
 
-  const resetForm = () => {
-    setFormData({ name: "", email: "", phone: "", roomNumber: "" });
-    setSelectedStudent(null);
-    setIsEditing(false);
-  };
+  if (loading) {
+    return <div className="text-center mt-8">Loading...</div>;
+  }
 
-  const openPopup = () => {
-    resetForm();
-    setShowPopup(true);
-  };
+  if (error) {
+    return <div className="text-center mt-8 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Student Management</h1>
+      <h1 className="text-2xl font-bold mb-4">Student Membership Management</h1>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      <div className="mb-4 flex justify-between items-center">
+        <div>
+          <label htmlFor="statusFilter" className="mr-2">
+            Filter by Status:
+          </label>
+          <select
+            id="statusFilter"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="border rounded px-2 py-1"
+          >
+            <option value="all">All</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+            <option value="EXPIRED">Expired</option>
+          </select>
+        </div>
+        <button
+          onClick={() => setShowAddStudentModal(true)}
+          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Add New Student
+        </button>
+      </div>
 
-      <button
-        onClick={openPopup}
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-      >
-        Add New Student
-      </button>
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100">
+              <th
+                className="px-4 py-2 border-b cursor-pointer"
+                onClick={() => handleSort("package.name")}
+              >
+                Package Name{" "}
+                {sortField === "package.name" &&
+                  (sortDirection === "asc" ? "▲" : "▼")}
+              </th>
+              <th
+                className="px-4 py-2 border-b cursor-pointer"
+                onClick={() => handleSort("startDate")}
+              >
+                Start Date{" "}
+                {sortField === "startDate" &&
+                  (sortDirection === "asc" ? "▲" : "▼")}
+              </th>
+              <th
+                className="px-4 py-2 border-b cursor-pointer"
+                onClick={() => handleSort("endDate")}
+              >
+                End Date{" "}
+                {sortField === "endDate" &&
+                  (sortDirection === "asc" ? "▲" : "▼")}
+              </th>
+              <th
+                className="px-4 py-2 border-b cursor-pointer"
+                onClick={() => handleSort("status")}
+              >
+                Status{" "}
+                {sortField === "status" &&
+                  (sortDirection === "asc" ? "▲" : "▼")}
+              </th>
+              <th className="px-4 py-2 border-b">Package Price</th>
+              <th className="px-4 py-2 border-b">Package Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredMemberships.map((membership, index) => (
+              <tr
+                key={membership.id || index}
+                className={index % 2 === 0 ? "bg-gray-50" : ""}
+              >
+                <td className="px-4 py-2 border-b">
+                  {membership.package.name}
+                </td>
+                <td className="px-4 py-2 border-b">
+                  {formatDate(membership.startDate)}
+                </td>
+                <td className="px-4 py-2 border-b">
+                  {formatDate(membership.endDate)}
+                </td>
+                <td className="px-4 py-2 border-b">
+                  <span
+                    className={`px-2 py-1 rounded ${
+                      membership.status === "ACTIVE"
+                        ? "bg-green-200 text-green-800"
+                        : membership.status === "INACTIVE"
+                        ? "bg-red-200 text-red-800"
+                        : "bg-yellow-200 text-yellow-800"
+                    }`}
+                  >
+                    {membership.status}
+                  </span>
+                </td>
+                <td className="px-4 py-2 border-b">
+                  ${membership.package.price}
+                </td>
+                <td className="px-4 py-2 border-b">
+                  {membership.package.duration} days
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {showPopup && (
+      {showAddStudentModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h2 className="text-xl font-semibold mb-4">
-              {isEditing ? "Edit Student" : "Add New Student"}
-            </h2>
-            <form onSubmit={handleSubmit}>
+            <h3 className="text-lg font-bold mb-4">Add New Student</h3>
+            <form onSubmit={handleAddStudent}>
               <div className="mb-4">
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-2"
+                  htmlFor="name"
+                >
+                  Name
+                </label>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Name"
-                  className="w-full border p-2 rounded"
+                  id="name"
+                  value={newStudent.name}
+                  onChange={(e) =>
+                    setNewStudent({ ...newStudent, name: e.target.value })
+                  }
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   required
                 />
               </div>
               <div className="mb-4">
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-2"
+                  htmlFor="email"
+                >
+                  Email
+                </label>
                 <input
                   type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Email"
-                  className="w-full border p-2 rounded"
+                  id="email"
+                  value={newStudent.email}
+                  onChange={(e) =>
+                    setNewStudent({ ...newStudent, email: e.target.value })
+                  }
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   required
                 />
               </div>
               <div className="mb-4">
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="Phone"
-                  className="w-full border p-2 rounded"
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-2"
+                  htmlFor="packageId"
+                >
+                  Package
+                </label>
+                <select
+                  id="packageId"
+                  value={newStudent.packageId}
+                  onChange={(e) =>
+                    setNewStudent({ ...newStudent, packageId: e.target.value })
+                  }
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   required
-                />
+                >
+                  <option value="">Select a package</option>
+                  {/* Assuming you have a list of packages available */}
+                  {memberships.map((membership) => (
+                    <option
+                      key={membership.package.id}
+                      value={membership.package.id}
+                    >
+                      {membership.package.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="mb-4">
-                <input
-                  type="text"
-                  name="roomNumber"
-                  value={formData.roomNumber}
-                  onChange={handleInputChange}
-                  placeholder="Room Number"
-                  className="w-full border p-2 rounded"
-                  required
-                />
-              </div>
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between">
                 <button
                   type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                 >
-                  {isEditing ? "Update" : "Add"}
+                  Add Student
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowPopup(false)}
-                  className="bg-gray-500 text-white px-4 py-2 rounded"
+                  onClick={() => setShowAddStudentModal(false)}
+                  className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                 >
                   Cancel
                 </button>
@@ -170,47 +292,8 @@ const AdminStudent = () => {
           </div>
         </div>
       )}
-
-      <h2 className="text-xl font-semibold mb-2">Student List</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white">
-          <thead>
-            <tr>
-              <th className="px-4 py-2 bg-gray-100">Name</th>
-              <th className="px-4 py-2 bg-gray-100">Email</th>
-              <th className="px-4 py-2 bg-gray-100">Phone</th>
-              <th className="px-4 py-2 bg-gray-100">Room Number</th>
-              <th className="px-4 py-2 bg-gray-100">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student) => (
-              <tr key={student.id}>
-                <td className="border px-4 py-2">{student.name}</td>
-                <td className="border px-4 py-2">{student.email}</td>
-                <td className="border px-4 py-2">{student.phone}</td>
-                <td className="border px-4 py-2">{student.roomNumber}</td>
-                <td className="border px-4 py-2">
-                  <button
-                    onClick={() => handleEdit(student)}
-                    className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(student.id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 };
 
-export default AdminStudent;
+export default AdminStudents;

@@ -26,13 +26,14 @@ const AddRoom = ({ setModel, editData, refetchRooms }) => {
   const navigate = useNavigate();
   const [roomData, setRoomData] = useState({
     roomIdentifier: "",
-    type: "Double Bed",
-    floor: "1",
+    type: "DOUBLE",
+    floor: 1,
     amenities: [],
-    status: "Available",
-    capacity: "",
+    status: "AVAILABLE",
+    totalCapacity: "",
     description: "",
     price: "",
+    roomCondition: "GOOD",
   });
   const [error, setError] = useState(null);
 
@@ -90,6 +91,9 @@ const AddRoom = ({ setModel, editData, refetchRooms }) => {
       const dataToSubmit = {
         ...roomData,
         amenities: JSON.stringify(roomData.amenities),
+        floor: parseInt(roomData.floor),
+        totalCapacity: parseInt(roomData.totalCapacity),
+        price: parseFloat(roomData.price),
       };
       await mutation.mutateAsync(dataToSubmit);
     } catch (error) {
@@ -113,7 +117,7 @@ const AddRoom = ({ setModel, editData, refetchRooms }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 overflow-y-auto">
       <div className="bg-white rounded-lg w-full max-w-2xl">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-800">
@@ -186,9 +190,11 @@ const AddRoom = ({ setModel, editData, refetchRooms }) => {
                 id="type"
                 value={roomData.type}
               >
-                <option value="Double Bed">Double Bed</option>
-                <option value="Single Bed">Single Bed</option>
-                <option value="Suite">Suite</option>
+                <option value="SINGLE">Single</option>
+                <option value="DOUBLE">Double</option>
+                <option value="TRIPLE">Triple</option>
+                <option value="QUAD">Quad</option>
+                <option value="DORMITORY">Dormitory</option>
               </select>
             </div>
             <div>
@@ -198,32 +204,30 @@ const AddRoom = ({ setModel, editData, refetchRooms }) => {
               >
                 Floor
               </label>
-              <select
+              <input
                 onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                name="floor"
-                id="floor"
+                required
+                type="number"
                 value={roomData.floor}
-              >
-                <option value="1">Floor 1</option>
-                <option value="2">Floor 2</option>
-                <option value="3">Floor 3</option>
-              </select>
+                name="floor"
+                placeholder="Enter floor number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
             <div>
               <label
                 className="block text-sm font-medium text-gray-700 mb-1"
-                htmlFor="capacity"
+                htmlFor="totalCapacity"
               >
-                Capacity
+                Total Capacity
               </label>
               <input
                 onChange={handleChange}
                 required
                 type="number"
-                value={roomData.capacity}
-                name="capacity"
-                placeholder="Enter room capacity"
+                value={roomData.totalCapacity}
+                name="totalCapacity"
+                placeholder="Enter total capacity"
                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -241,9 +245,30 @@ const AddRoom = ({ setModel, editData, refetchRooms }) => {
                 id="status"
                 value={roomData.status}
               >
-                <option value="Available">Available</option>
-                <option value="Booked">Booked</option>
-                <option value="Reserved">Reserved</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="FULLY_OCCUPIED">Fully Occupied</option>
+                <option value="PARTIALLY_OCCUPIED">Partially Occupied</option>
+                <option value="UNDER_MAINTENANCE">Under Maintenance</option>
+              </select>
+            </div>
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="roomCondition"
+              >
+                Room Condition
+              </label>
+              <select
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                name="roomCondition"
+                id="roomCondition"
+                value={roomData.roomCondition}
+              >
+                <option value="EXCELLENT">Excellent</option>
+                <option value="GOOD">Good</option>
+                <option value="FAIR">Fair</option>
+                <option value="POOR">Poor</option>
               </select>
             </div>
           </div>

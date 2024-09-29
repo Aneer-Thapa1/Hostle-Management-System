@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
 const AdminBookings = () => {
   const [bookings, setBookings] = useState([]);
-  const [rooms, setRooms] = useState([]);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [showRoomPopup, setShowRoomPopup] = useState(false);
-  const [selectedBookingId, setSelectedBookingId] = useState(null);
-  const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [error, setError] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [bookingsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "ascending",
+  });
 
   const axiosInstance = axios.create({
     baseURL: apiUrl,
@@ -22,219 +26,235 @@ const AdminBookings = () => {
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [statusFilter]);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("/api/booking/getBookings");
+      const response = await axiosInstance.get("/api/booking/getBookings", {
+        params: { status: statusFilter },
+      });
       setBookings(response.data.bookings || []);
       setError("");
     } catch (err) {
-      setError("Failed to fetch bookings");
-      console.error(err);
-      setBookings([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRooms = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get("/api/rooms/roomDetails", {
-        params: { status: "available" },
-      });
-      setRooms(response.data.data || []);
-      setError("");
-    } catch (err) {
-      setError("Failed to fetch rooms");
-      console.error(err);
-      setRooms([]);
+      console.error("Error fetching bookings:", err);
+      setError("Failed to fetch bookings. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleAccept = async (id) => {
-    setSelectedBookingId(id);
-    await fetchRooms();
-    setShowRoomPopup(true);
-  };
-
-  const handleRoomSelect = async () => {
-    if (!selectedRoomId) {
-      setError("Please select a room");
-      return;
-    }
     try {
-      setLoading(true);
-      await axiosInstance.post(`/api/booking/acceptBooking`, {
-        bookingId: selectedBookingId,
-        roomId: selectedRoomId,
-      });
-      setShowRoomPopup(false);
-      setSelectedBookingId(null);
-      setSelectedRoomId("");
+      await axiosInstance.post(`/api/booking/acceptBooking`, { bookingId: id });
       fetchBookings();
-      setError("");
     } catch (err) {
-      setError("Failed to accept booking");
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.error("Error accepting booking:", err);
+      setError("Failed to accept booking. Please try again.");
     }
   };
 
   const handleReject = async (id) => {
-    if (window.confirm("Are you sure you want to reject this booking?")) {
-      try {
-        setLoading(true);
-        await axiosInstance.put(`/api/booking/bookings/${id}`, {
-          status: "rejected",
-        });
-        fetchBookings();
-      } catch (err) {
-        setError("Failed to reject booking");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    try {
+      await axiosInstance.post(`/api/booking/rejectBooking`, { bookingId: id });
+      fetchBookings();
+    } catch (err) {
+      console.error("Error rejecting booking:", err);
+      setError("Failed to reject booking. Please try again.");
     }
   };
 
-  const formatDate = (dateString) => {
-    const options = { year: "numeric", month: "long", day: "numeric" };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  const requestSort = (key) => {
+    let direction = "ascending";
+    if (sortConfig.key === key && sortConfig.direction === "ascending") {
+      direction = "descending";
+    }
+    setSortConfig({ key, direction });
   };
 
-  if (loading && !showRoomPopup) {
-    return <div className="text-center mt-8">Loading...</div>;
+  const sortedBookings = React.useMemo(() => {
+    let sortableBookings = [...bookings];
+    if (sortConfig.key) {
+      sortableBookings.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === "ascending" ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === "ascending" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableBookings;
+  }, [bookings, sortConfig]);
+
+  const getSortIcon = (columnName) => {
+    if (sortConfig.key === columnName) {
+      return sortConfig.direction === "ascending" ? (
+        <FaSortUp />
+      ) : (
+        <FaSortDown />
+      );
+    }
+    return <FaSort />;
+  };
+
+  // Get current bookings
+  const indexOfLastBooking = currentPage * bookingsPerPage;
+  const indexOfFirstBooking = indexOfLastBooking - bookingsPerPage;
+  const currentBookings = sortedBookings.slice(
+    indexOfFirstBooking,
+    indexOfLastBooking
+  );
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Booking Management</h1>
+    <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Booking Management</h1>
+        <div className="flex items-center">
+          <label
+            htmlFor="statusFilter"
+            className="mr-2 text-sm font-medium text-gray-700"
+          >
+            Filter:
+          </label>
+          <select
+            id="statusFilter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          >
+            <option value="">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="ACCEPTED">Accepted</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+      </div>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {error && (
+        <p className="text-red-500 mb-4 p-3 bg-red-100 rounded">{error}</p>
+      )}
 
-      {bookings.length === 0 ? (
-        <p>No bookings available.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-300">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="px-4 py-2 border-b">Package Name</th>
-                <th className="px-4 py-2 border-b">Check-In Date</th>
-                <th className="px-4 py-2 border-b">Check-Out Date</th>
-                <th className="px-4 py-2 border-b">Number of Students</th>
-                <th className="px-4 py-2 border-b">Total Price</th>
-                <th className="px-4 py-2 border-b">Status</th>
-                <th className="px-4 py-2 border-b">Actions</th>
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ID
+              </th>
+              <th
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => requestSort("checkInDate")}
+              >
+                Check-In {getSortIcon("checkInDate")}
+              </th>
+              <th
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => requestSort("checkOutDate")}
+              >
+                Check-Out {getSortIcon("checkOutDate")}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {currentBookings.map((booking) => (
+              <tr
+                key={booking.id}
+                className="hover:bg-gray-50 transition-colors duration-200"
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {booking.id}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(booking.checkInDate)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(booking.checkOutDate)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    ${
+                      booking.status === "PENDING"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : booking.status === "ACCEPTED"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {booking.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  {booking.status === "PENDING" ? (
+                    <>
+                      <button
+                        onClick={() => handleAccept(booking.id)}
+                        className="text-indigo-600 hover:text-indigo-900 mr-4 transition-colors duration-200"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleReject(booking.id)}
+                        className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No actions available</span>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {bookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-gray-50">
-                  <td className="border-b px-4 py-2">
-                    {booking.package ? booking.package.name : "N/A"}
-                  </td>
-                  <td className="border-b px-4 py-2">
-                    {formatDate(booking.checkInDate)}
-                  </td>
-                  <td className="border-b px-4 py-2">
-                    {formatDate(booking.checkOutDate)}
-                  </td>
-                  <td className="border-b px-4 py-2">
-                    {booking.numberOfStudents}
-                  </td>
-                  <td className="border-b px-4 py-2">
-                    ${booking.totalPrice.toFixed(2)}
-                  </td>
-                  <td className="border-b px-4 py-2">
-                    <span
-                      className={`px-2 py-1 rounded ${
-                        booking.status === "confirmed"
-                          ? "bg-green-200 text-green-800"
-                          : booking.status === "pending"
-                          ? "bg-yellow-200 text-yellow-800"
-                          : booking.status === "rejected"
-                          ? "bg-red-200 text-red-800"
-                          : "bg-gray-200 text-gray-800"
-                      }`}
-                    >
-                      {booking.status.charAt(0).toUpperCase() +
-                        booking.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="border-b px-4 py-2">
-                    {booking.status === "pending" && (
-                      <>
-                        <button
-                          onClick={() => handleAccept(booking.id)}
-                          className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded mr-2 transition duration-300"
-                          disabled={loading}
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleReject(booking.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded transition duration-300"
-                          disabled={loading}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    {booking.status !== "pending" && (
-                      <span className="text-gray-500">
-                        No actions available
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {showRoomPopup && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h2 className="text-xl font-semibold mb-4">Select a Room</h2>
-            <select
-              value={selectedRoomId}
-              onChange={(e) => setSelectedRoomId(e.target.value)}
-              className="w-full p-2 border rounded mb-4"
-            >
-              <option value="">Select a room</option>
-              {rooms.map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.roomIdentifier} ({room.type})
-                </option>
-              ))}
-            </select>
-            <div className="flex justify-end">
-              <button
-                onClick={handleRoomSelect}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mr-2 transition duration-300"
-                disabled={loading}
-              >
-                Confirm
-              </button>
-              <button
-                onClick={() => setShowRoomPopup(false)}
-                className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition duration-300"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Pagination */}
+      <div className="mt-4 flex justify-center">
+        {[
+          ...Array(Math.ceil(sortedBookings.length / bookingsPerPage)).keys(),
+        ].map((number) => (
+          <button
+            key={number + 1}
+            onClick={() => paginate(number + 1)}
+            className={`mx-1 px-3 py-1 rounded transition-colors duration-200 ${
+              currentPage === number + 1
+                ? "bg-blue-500 text-white"
+                : "bg-gray-200 hover:bg-gray-300"
+            }`}
+          >
+            {number + 1}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

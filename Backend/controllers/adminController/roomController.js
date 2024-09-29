@@ -9,8 +9,7 @@ const addRoom = async (req, res) => {
     type,
     floor,
     amenities,
-    status,
-    capacity,
+    totalCapacity,
     description,
     price,
     dateAvailable,
@@ -22,13 +21,13 @@ const addRoom = async (req, res) => {
     !roomIdentifier ||
     !type ||
     !floor ||
-    !capacity ||
+    !totalCapacity ||
     !description ||
     !price
   ) {
     return res.status(400).json({
       error:
-        "Room identifier, type, floor, capacity, description, and price are required",
+        "Room identifier, type, floor, total capacity, description, and price are required",
     });
   }
 
@@ -49,8 +48,10 @@ const addRoom = async (req, res) => {
         type,
         floor: parseInt(floor, 10),
         amenities: JSON.stringify(amenities),
-        status: status || "available",
-        capacity: parseInt(capacity, 10),
+        status: "AVAILABLE",
+        totalCapacity: parseInt(totalCapacity, 10),
+        currentOccupancy: 0,
+        availableSpots: parseInt(totalCapacity, 10),
         description,
         price: parseFloat(price),
         dateAvailable: dateAvailable ? new Date(dateAvailable) : new Date(),
@@ -93,7 +94,7 @@ const getRooms = async (req, res) => {
     type,
     minPrice,
     maxPrice,
-    capacity,
+    minAvailableSpots,
   } = req.query;
 
   try {
@@ -118,12 +119,15 @@ const getRooms = async (req, res) => {
       const take = parseInt(limit);
 
       const filter = {};
-      if (status && status !== "allRooms") filter.status = status;
+      if (status && status !== "allRooms") {
+        filter.status = status;
+      }
       if (type) filter.type = type;
       if (minPrice) filter.price = { gte: parseFloat(minPrice) };
       if (maxPrice)
         filter.price = { ...filter.price, lte: parseFloat(maxPrice) };
-      if (capacity) filter.capacity = { gte: parseInt(capacity) };
+      if (minAvailableSpots)
+        filter.availableSpots = { gte: parseInt(minAvailableSpots) };
 
       const [rooms, totalCount] = await prisma.$transaction([
         prisma.room.findMany({
@@ -170,8 +174,7 @@ const updateRoom = async (req, res) => {
     type,
     floor,
     amenities,
-    status,
-    capacity,
+    totalCapacity,
     description,
     price,
     dateAvailable,
@@ -183,7 +186,7 @@ const updateRoom = async (req, res) => {
   }
 
   try {
-    const hostelOwnerId = req.user.id;
+    const hostelOwnerId = req.user.user.id;
 
     const existingRoom = await prisma.room.findFirst({
       where: {
@@ -201,13 +204,27 @@ const updateRoom = async (req, res) => {
       ...(type && { type }),
       ...(floor && { floor: parseInt(floor, 10) }),
       ...(amenities && { amenities: JSON.stringify(amenities) }),
-      ...(status && { status }),
-      ...(capacity && { capacity: parseInt(capacity, 10) }),
+      ...(totalCapacity && {
+        totalCapacity: parseInt(totalCapacity, 10),
+        availableSpots:
+          parseInt(totalCapacity, 10) - existingRoom.currentOccupancy,
+      }),
       ...(description && { description }),
       ...(price && { price: parseFloat(price) }),
       ...(dateAvailable && { dateAvailable: new Date(dateAvailable) }),
       ...(roomCondition && { roomCondition }),
     };
+
+    // Update room status based on occupancy
+    if (updateData.totalCapacity) {
+      if (existingRoom.currentOccupancy === 0) {
+        updateData.status = "AVAILABLE";
+      } else if (existingRoom.currentOccupancy === updateData.totalCapacity) {
+        updateData.status = "FULLY_OCCUPIED";
+      } else {
+        updateData.status = "PARTIALLY_OCCUPIED";
+      }
+    }
 
     const updatedRoom = await prisma.room.update({
       where: { id: parseInt(roomId) },
@@ -243,22 +260,17 @@ const deleteRoom = async (req, res) => {
   }
 
   try {
-    const hostelOwnerId = req.user.id;
+    const hostelOwnerId = req.user.user.id;
 
-    // First, find the room and its associated hostel owner
     const existingRoom = await prisma.room.findFirst({
       where: {
         id: parseInt(roomId),
-        hostelOwnerId: hostelOwnerId,
+        hostelOwnerId: parseInt(hostelOwnerId),
       },
       include: {
-        hostelOwner: {
-          include: {
-            bookings: {
-              where: {
-                status: { in: ["pending", "confirmed"] },
-              },
-            },
+        bookings: {
+          where: {
+            status: { in: ["PENDING", "ACCEPTED"] },
           },
         },
       },
@@ -268,14 +280,12 @@ const deleteRoom = async (req, res) => {
       return res.status(404).json({ error: "Room not found or unauthorized" });
     }
 
-    // Check if there are any active bookings for the hostel
-    if (existingRoom.hostelOwner.bookings.length > 0) {
+    if (existingRoom.bookings.length > 0) {
       return res
         .status(400)
-        .json({ error: "Cannot delete room while hostel has active bookings" });
+        .json({ error: "Cannot delete room with active bookings" });
     }
 
-    // If no active bookings, proceed with deletion
     await prisma.room.delete({
       where: { id: parseInt(roomId) },
     });
@@ -293,12 +303,13 @@ const deleteRoom = async (req, res) => {
 
 const getRoomAvailability = async (req, res) => {
   const { roomId } = req.params;
-  const { startDate, endDate } = req.query;
+  const { startDate, endDate, numberOfOccupants } = req.query;
 
-  if (!roomId || !startDate || !endDate) {
-    return res
-      .status(400)
-      .json({ error: "Room ID, start date, and end date are required" });
+  if (!roomId || !startDate || !endDate || !numberOfOccupants) {
+    return res.status(400).json({
+      error:
+        "Room ID, start date, end date, and number of occupants are required",
+    });
   }
 
   try {
@@ -307,7 +318,7 @@ const getRoomAvailability = async (req, res) => {
       include: {
         bookings: {
           where: {
-            status: { in: ["pending", "confirmed"] },
+            status: { in: ["PENDING", "ACCEPTED"] },
             OR: [
               {
                 checkInDate: {
@@ -337,11 +348,18 @@ const getRoomAvailability = async (req, res) => {
       return res.status(404).json({ error: "Room not found" });
     }
 
-    const isAvailable = room.bookings.length === 0;
+    const totalOccupantsForPeriod = room.bookings.reduce(
+      (sum, booking) => sum + booking.numberOfOccupants,
+      0
+    );
+    const availableSpots = room.totalCapacity - totalOccupantsForPeriod;
+    const isAvailable = availableSpots >= parseInt(numberOfOccupants);
 
     res.status(200).json({
       message: "Room availability retrieved successfully",
       isAvailable,
+      availableSpots,
+      totalCapacity: room.totalCapacity,
       conflictingBookings: room.bookings,
     });
   } catch (error) {
