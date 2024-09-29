@@ -3,7 +3,6 @@ const prisma = new PrismaClient();
 
 const createBooking = async (req, res) => {
   try {
-    // Check if user is authenticated
     if (!req.user) {
       return res
         .status(401)
@@ -14,16 +13,6 @@ const createBooking = async (req, res) => {
     const { hostelId, packageId, checkInDate, numberOfPersons, totalPrice } =
       req.body;
 
-    console.log(
-      userId,
-      hostelId,
-      packageId,
-      checkInDate,
-      numberOfPersons,
-      totalPrice
-    );
-
-    // Validate input
     if (
       !hostelId ||
       !packageId ||
@@ -34,49 +23,35 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Parse check-in date
     const parsedCheckInDate = new Date(checkInDate);
 
-    // Validate check-in date
-    if (parsedCheckInDate < new Date()) {
-      return res
-        .status(400)
-        .json({ message: "Check-in date must be in the future" });
-    }
-
-    // Fetch hostel details
-    const hostel = await prisma.hostelOwner.findUnique({
-      where: { id: parseInt(hostelId) },
-    });
-
-    if (!hostel) {
-      return res.status(404).json({ message: "Hostel not found" });
-    }
-
-    // Fetch package details
-    const package = await prisma.package.findUnique({
+    const packageDetails = await prisma.package.findUnique({
       where: { id: parseInt(packageId) },
     });
 
-    if (!package) {
+    if (!packageDetails) {
       return res.status(404).json({ message: "Package not found" });
     }
 
-    // Calculate checkout date based on package duration
     const checkOutDate = new Date(parsedCheckInDate);
-    checkOutDate.setDate(checkOutDate.getDate() + package.duration);
+    checkOutDate.setDate(checkOutDate.getDate() + packageDetails.duration);
 
-    // Create booking
     const booking = await prisma.booking.create({
       data: {
-        userId: parseInt(userId),
-        hostelId: parseInt(hostelId),
-        packageId: parseInt(packageId),
+        user: { connect: { id: parseInt(userId) } },
+        hostel: { connect: { id: parseInt(hostelId) } },
+        package: { connect: { id: parseInt(packageId) } },
         checkInDate: parsedCheckInDate,
         checkOutDate: checkOutDate,
-        numberOfStudents: parseInt(numberOfPersons),
+        numberOfOccupants: parseInt(numberOfPersons),
         totalPrice: parseFloat(totalPrice),
-        status: "pending",
+        status: "PENDING",
+        isActive: true,
+      },
+      include: {
+        user: true,
+        hostel: true,
+        package: true,
       },
     });
 
@@ -94,19 +69,8 @@ const createBooking = async (req, res) => {
 
 const getBookings = async (req, res) => {
   try {
-    // Check if user is authenticated
-    if (!req.user) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized: User not authenticated" });
-    }
+    const { status, startDate, endDate, hostelId } = req.query;
 
-    const userId = req.user.user.id;
-
-    // Parse query parameters for filtering
-    const { status, startDate, endDate } = req.query;
-
-    // Build the where clause for filtering
     let whereClause = {};
 
     if (status) {
@@ -120,18 +84,19 @@ const getBookings = async (req, res) => {
       };
     }
 
-    // Fetch bookings
+    if (hostelId) {
+      whereClause.hostelId = parseInt(hostelId);
+    }
+
     const bookings = await prisma.booking.findMany({
-      where: {
-        ...whereClause,
-        userId: parseInt(userId),
-      },
+      where: whereClause,
       include: {
+        user: true,
         hostel: true,
         package: true,
       },
       orderBy: {
-        checkInDate: "desc",
+        createdAt: "desc",
       },
     });
 
@@ -150,70 +115,165 @@ const getBookings = async (req, res) => {
 const acceptBooking = async (req, res) => {
   const { bookingId, roomId } = req.body;
 
-  console.log(bookingId, roomId);
-
-  if (!bookingId || !roomId) {
-    return res
-      .status(400)
-      .json({ error: "Booking ID and Room ID are required" });
-  }
-
   try {
+    // Start a transaction
     const result = await prisma.$transaction(async (prisma) => {
-      // Find the booking
+      // Fetch the booking
       const booking = await prisma.booking.findUnique({
         where: { id: parseInt(bookingId) },
+        include: { package: true, user: true, hostel: true },
       });
 
       if (!booking) {
         throw new Error("Booking not found");
       }
 
-      if (booking.status !== "pending") {
-        throw new Error("Booking is not in a pending state");
-      }
-
-      // Find the room
+      // Fetch the room
       const room = await prisma.room.findUnique({
         where: { id: parseInt(roomId) },
       });
-
-      console.log(room);
 
       if (!room) {
         throw new Error("Room not found");
       }
 
-      if (room.status !== "available") {
-        throw new Error("Selected room is not available");
+      // Calculate new occupancy and available spots
+      const newOccupancy = room.currentOccupancy + booking.numberOfOccupants;
+      const newAvailableSpots = room.totalCapacity - newOccupancy;
+
+      if (newAvailableSpots < 0) {
+        throw new Error("Not enough space in the selected room");
       }
 
       // Update the booking
       const updatedBooking = await prisma.booking.update({
-        where: { id: parseInt(bookingId) },
+        where: { id: booking.id },
         data: {
-          status: "confirmed",
-          roomId: parseInt(roomId),
+          status: "ACCEPTED",
+          room: { connect: { id: room.id } },
+        },
+        include: {
+          user: true,
+          hostel: true,
+          package: true,
+          room: true,
         },
       });
 
-      // Update the room status to occupied
+      // Update the room's occupancy and available spots
       await prisma.room.update({
-        where: { id: parseInt(roomId) },
-        data: { status: "occupied" },
+        where: { id: room.id },
+        data: {
+          currentOccupancy: newOccupancy,
+          availableSpots: newAvailableSpots,
+        },
       });
 
-      return updatedBooking;
+      // Create a membership
+      const membership = await prisma.hostelMembership.create({
+        data: {
+          userId: booking.userId,
+          hostelId: booking.hostelId,
+          packageId: booking.packageId,
+          bookingId: booking.id,
+          startDate: booking.checkInDate,
+          endDate: booking.checkOutDate,
+          status: "ACTIVE",
+        },
+      });
+
+      return { updatedBooking, membership };
     });
 
     res.status(200).json({
-      message: "Booking accepted successfully",
-      booking: result,
+      message:
+        "Booking accepted, room assigned, and membership created successfully",
+      booking: result.updatedBooking,
+      membership: result.membership,
     });
   } catch (error) {
-    console.error("Accept booking error:", error);
-    res.status(400).json({ error: error.message });
+    console.error("Error accepting booking:", error);
+    res.status(500).json({
+      message: "Error accepting booking",
+      error: error.message,
+    });
   }
 };
 
-module.exports = { createBooking, getBookings, acceptBooking };
+const declineBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: parseInt(bookingId) },
+      data: {
+        status: "REJECTED",
+      },
+      include: {
+        user: true,
+        hostel: true,
+        package: true,
+      },
+    });
+
+    res.status(200).json({
+      message: "Booking declined successfully",
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    console.error("Error declining booking:", error);
+    res
+      .status(500)
+      .json({ message: "Error declining booking", error: error.message });
+  }
+};
+
+const getUserBookings = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: User not authenticated" });
+    }
+
+    const userId = req.user.user.id;
+    const { status, startDate, endDate } = req.query;
+
+    let whereClause = { userId: parseInt(userId) };
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (startDate && endDate) {
+      whereClause.checkInDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: whereClause,
+      include: {
+        hostel: true,
+        package: true,
+        room: true,
+      },
+      orderBy: {
+        checkInDate: "desc",
+      },
+    });
+
+    res.status(200).json({
+      message: "Bookings retrieved successfully",
+      bookings,
+    });
+  } catch (error) {
+    console.error("Error retrieving bookings:", error);
+    res
+      .status(500)
+      .json({ message: "Error retrieving bookings", error: error.message });
+  }
+};
+
+module.exports = { createBooking, getBookings, acceptBooking, declineBooking };

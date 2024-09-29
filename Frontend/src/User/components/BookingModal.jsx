@@ -15,6 +15,7 @@ const fetchPackages = async (hostelId) => {
     headers: { Authorization: `Bearer ${token}` },
     params: { hostelId },
   });
+  console.log(response);
   return response.data;
 };
 

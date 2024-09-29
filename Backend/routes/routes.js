@@ -5,6 +5,7 @@ const hostelRoutes = require("./userRoute/hostelRoute");
 const favoriteRoute = require("./userRoute/favoriteRoute");
 const bookingRoutes = require("./userRoute/bookingRoute");
 const hostelContent = require("./adminRoute/hostelContentRoute");
+const membershipRoute = require("./adminRoute/membershipRoute");
 
 const setupRoutes = (app) => {
   app.use("/api/auth", authRoutes);
@@ -13,6 +14,7 @@ const setupRoutes = (app) => {
   app.use("/api/favorite", authMiddleware, favoriteRoute);
   app.use("/api/booking", authMiddleware, bookingRoutes);
   app.use("/api/content", authMiddleware, hostelContent);
+  app.use("/api/membership", authMiddleware, membershipRoute);
 };
 
 module.exports = setupRoutes;

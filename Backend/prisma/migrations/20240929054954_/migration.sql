@@ -4,9 +4,9 @@ CREATE TABLE `User` (
     `name` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
-    `address` VARCHAR(191) NOT NULL,
+    `address` VARCHAR(191) NULL,
     `contact` VARCHAR(191) NOT NULL,
-    `role` VARCHAR(191) NOT NULL DEFAULT 'user',
+    `role` ENUM('ADMIN', 'HOSTEL_OWNER', 'STUDENT') NOT NULL DEFAULT 'STUDENT',
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -20,8 +20,8 @@ CREATE TABLE `HostelOwner` (
     `hostelName` VARCHAR(191) NOT NULL,
     `ownerName` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
-    `contact` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
+    `contact` VARCHAR(191) NOT NULL,
     `location` VARCHAR(191) NOT NULL,
     `address` VARCHAR(191) NOT NULL,
     `latitude` DOUBLE NOT NULL,
@@ -40,19 +40,22 @@ CREATE TABLE `HostelOwner` (
 CREATE TABLE `Room` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `roomIdentifier` VARCHAR(191) NOT NULL,
-    `type` VARCHAR(191) NOT NULL,
+    `type` ENUM('SINGLE', 'DOUBLE', 'TRIPLE', 'QUAD', 'DORMITORY') NOT NULL,
     `floor` INTEGER NOT NULL,
-    `amenities` TEXT NOT NULL,
-    `status` VARCHAR(191) NOT NULL,
-    `capacity` INTEGER NOT NULL,
+    `amenities` JSON NOT NULL,
+    `status` ENUM('AVAILABLE', 'FULLY_OCCUPIED', 'PARTIALLY_OCCUPIED', 'UNDER_MAINTENANCE') NOT NULL DEFAULT 'AVAILABLE',
+    `totalCapacity` INTEGER NOT NULL,
+    `currentOccupancy` INTEGER NOT NULL DEFAULT 0,
+    `availableSpots` INTEGER NOT NULL,
     `description` TEXT NOT NULL,
-    `price` DOUBLE NOT NULL,
+    `price` DECIMAL(10, 2) NOT NULL,
     `roomCondition` VARCHAR(191) NOT NULL,
     `dateAvailable` DATETIME(3) NOT NULL,
     `hostelOwnerId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Room_hostelOwnerId_idx`(`hostelOwnerId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -61,14 +64,18 @@ CREATE TABLE `Booking` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `userId` INTEGER NOT NULL,
     `hostelId` INTEGER NOT NULL,
+    `roomId` INTEGER NULL,
+    `packageId` INTEGER NOT NULL,
     `checkInDate` DATETIME(3) NOT NULL,
     `checkOutDate` DATETIME(3) NOT NULL,
-    `totalPrice` DOUBLE NOT NULL,
-    `status` VARCHAR(191) NOT NULL,
+    `numberOfOccupants` INTEGER NOT NULL,
+    `totalPrice` DECIMAL(10, 2) NOT NULL,
+    `status` ENUM('PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'COMPLETED') NOT NULL DEFAULT 'PENDING',
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
-    `dealId` INTEGER NULL,
 
+    INDEX `Booking_userId_hostelId_packageId_idx`(`userId`, `hostelId`, `packageId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -82,6 +89,7 @@ CREATE TABLE `Rating` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Rating_userId_hostelId_idx`(`userId`, `hostelId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -102,15 +110,15 @@ CREATE TABLE `Package` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `description` TEXT NOT NULL,
-    `price` DOUBLE NOT NULL,
+    `price` DECIMAL(10, 2) NOT NULL,
     `duration` INTEGER NOT NULL,
-    `services` TEXT NOT NULL,
+    `services` JSON NOT NULL,
     `mealPlan` VARCHAR(191) NOT NULL,
-    `cancellationPolicy` VARCHAR(191) NOT NULL,
     `hostelOwnerId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Package_hostelOwnerId_idx`(`hostelOwnerId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -120,12 +128,15 @@ CREATE TABLE `HostelMembership` (
     `userId` INTEGER NOT NULL,
     `hostelId` INTEGER NOT NULL,
     `packageId` INTEGER NOT NULL,
+    `bookingId` INTEGER NOT NULL,
     `startDate` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `endDate` DATETIME(3) NOT NULL,
-    `status` VARCHAR(191) NOT NULL,
+    `status` ENUM('ACTIVE', 'INACTIVE', 'EXPIRED') NOT NULL DEFAULT 'ACTIVE',
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    UNIQUE INDEX `HostelMembership_bookingId_key`(`bookingId`),
+    INDEX `HostelMembership_userId_hostelId_packageId_idx`(`userId`, `hostelId`, `packageId`),
     UNIQUE INDEX `HostelMembership_userId_hostelId_packageId_key`(`userId`, `hostelId`, `packageId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -133,15 +144,34 @@ CREATE TABLE `HostelMembership` (
 -- CreateTable
 CREATE TABLE `Payment` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `amount` DOUBLE NOT NULL,
+    `amount` DECIMAL(10, 2) NOT NULL,
     `paymentDate` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `paymentMethod` VARCHAR(191) NOT NULL,
-    `status` VARCHAR(191) NOT NULL,
+    `paymentMethod` ENUM('CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'CASH', 'MOBILE_PAYMENT') NOT NULL,
+    `status` ENUM('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED') NOT NULL DEFAULT 'PENDING',
     `userId` INTEGER NOT NULL,
     `hostelMembershipId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Payment_userId_hostelMembershipId_idx`(`userId`, `hostelMembershipId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `StayHistory` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `userId` INTEGER NOT NULL,
+    `hostelId` INTEGER NOT NULL,
+    `bookingId` INTEGER NOT NULL,
+    `checkInDate` DATETIME(3) NOT NULL,
+    `checkOutDate` DATETIME(3) NOT NULL,
+    `packageName` VARCHAR(191) NOT NULL,
+    `roomType` ENUM('SINGLE', 'DOUBLE', 'TRIPLE', 'QUAD', 'DORMITORY') NOT NULL,
+    `totalPrice` DECIMAL(10, 2) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `StayHistory_bookingId_key`(`bookingId`),
+    INDEX `StayHistory_userId_hostelId_idx`(`userId`, `hostelId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -156,6 +186,7 @@ CREATE TABLE `Facility` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Facility_hostelOwnerId_idx`(`hostelOwnerId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -168,6 +199,7 @@ CREATE TABLE `GalleryImage` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `GalleryImage_hostelOwnerId_idx`(`hostelOwnerId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -176,7 +208,7 @@ CREATE TABLE `Meal` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `description` TEXT NOT NULL,
-    `price` DOUBLE NOT NULL,
+    `price` DECIMAL(10, 2) NOT NULL,
     `isVegan` BOOLEAN NOT NULL,
     `isGlutenFree` BOOLEAN NOT NULL,
     `available` BOOLEAN NOT NULL,
@@ -184,6 +216,7 @@ CREATE TABLE `Meal` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Meal_hostelOwnerId_idx`(`hostelOwnerId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -191,7 +224,7 @@ CREATE TABLE `Meal` (
 CREATE TABLE `NearbyAttraction` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
-    `distance` VARCHAR(191) NOT NULL,
+    `distance` DECIMAL(5, 2) NOT NULL,
     `type` VARCHAR(191) NOT NULL,
     `openingHours` VARCHAR(191) NULL,
     `description` TEXT NULL,
@@ -199,6 +232,7 @@ CREATE TABLE `NearbyAttraction` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `NearbyAttraction_hostelOwnerId_idx`(`hostelOwnerId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -210,6 +244,12 @@ ALTER TABLE `Booking` ADD CONSTRAINT `Booking_userId_fkey` FOREIGN KEY (`userId`
 
 -- AddForeignKey
 ALTER TABLE `Booking` ADD CONSTRAINT `Booking_hostelId_fkey` FOREIGN KEY (`hostelId`) REFERENCES `HostelOwner`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Booking` ADD CONSTRAINT `Booking_roomId_fkey` FOREIGN KEY (`roomId`) REFERENCES `Room`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Booking` ADD CONSTRAINT `Booking_packageId_fkey` FOREIGN KEY (`packageId`) REFERENCES `Package`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Rating` ADD CONSTRAINT `Rating_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -236,10 +276,22 @@ ALTER TABLE `HostelMembership` ADD CONSTRAINT `HostelMembership_hostelId_fkey` F
 ALTER TABLE `HostelMembership` ADD CONSTRAINT `HostelMembership_packageId_fkey` FOREIGN KEY (`packageId`) REFERENCES `Package`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `HostelMembership` ADD CONSTRAINT `HostelMembership_bookingId_fkey` FOREIGN KEY (`bookingId`) REFERENCES `Booking`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `Payment` ADD CONSTRAINT `Payment_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Payment` ADD CONSTRAINT `Payment_hostelMembershipId_fkey` FOREIGN KEY (`hostelMembershipId`) REFERENCES `HostelMembership`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `StayHistory` ADD CONSTRAINT `StayHistory_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `StayHistory` ADD CONSTRAINT `StayHistory_hostelId_fkey` FOREIGN KEY (`hostelId`) REFERENCES `HostelOwner`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `StayHistory` ADD CONSTRAINT `StayHistory_bookingId_fkey` FOREIGN KEY (`bookingId`) REFERENCES `Booking`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Facility` ADD CONSTRAINT `Facility_hostelOwnerId_fkey` FOREIGN KEY (`hostelOwnerId`) REFERENCES `HostelOwner`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

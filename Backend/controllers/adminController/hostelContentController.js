@@ -87,7 +87,7 @@ const hostelContentController = {
 
   getPackages: async (req, res) => {
     try {
-      const id = req.user.user.id;
+      const id = parseInt(req.query.hostelId) || req.user.user.id;
 
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
@@ -96,7 +96,7 @@ const hostelContentController = {
       const packages = await prisma.package.findMany({
         where: { hostelOwnerId: id },
       });
-
+      console.log(packages);
       res.json(packages);
     } catch (error) {
       console.error("Error fetching packages:", error);

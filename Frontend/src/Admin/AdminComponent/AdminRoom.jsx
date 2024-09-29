@@ -134,11 +134,17 @@ const AdminRoom = () => {
 
   return (
     <div className="w-full h-full flex flex-col bg-white p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">Room Management</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Room Management</h1>
 
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-6">
         <div className="flex space-x-2">
-          {["allRooms", "Available", "Booked", "Reserved"].map((status) => (
+          {[
+            "allRooms",
+            "AVAILABLE",
+            "FULLY_OCCUPIED",
+            "PARTIALLY_OCCUPIED",
+            "UNDER_MAINTENANCE",
+          ].map((status) => (
             <button
               key={status}
               onClick={() => handleStatusChange(status)}
@@ -149,19 +155,19 @@ const AdminRoom = () => {
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
             >
-              {status === "allRooms" ? "All Rooms" : status}
+              {status === "allRooms" ? "All Rooms" : status.replace(/_/g, " ")}
             </button>
           ))}
         </div>
         <button
           onClick={openAddRoomForm}
-          className="bg-green-500 text-white font-medium rounded-md px-4 py-2 hover:bg-green-600 transition-colors duration-200"
+          className="bg-green-500 text-white font-medium rounded-md px-6 py-3 hover:bg-green-600 transition-colors duration-200 shadow-md"
         >
           Add New Room
         </button>
       </div>
 
-      <div className="flex-grow overflow-auto">
+      <div className="flex-grow overflow-auto shadow-md rounded-lg">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -169,7 +175,9 @@ const AdminRoom = () => {
                 "Room Number",
                 "Type",
                 "Floor",
-                "Amenities",
+                "Total Capacity",
+                "Current Occupancy",
+                "Available Spots",
                 "Status",
                 "Actions",
               ].map((header) => (
@@ -185,7 +193,7 @@ const AdminRoom = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {rooms.map((room) => (
-              <tr key={room.id}>
+              <tr key={room.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {room.roomIdentifier}
                 </td>
@@ -196,20 +204,28 @@ const AdminRoom = () => {
                   {room.floor}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {parseAmenities(room.amenities)}
+                  {room.totalCapacity}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {room.currentOccupancy}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {room.availableSpots}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                     ${
-                      room.status === "Available"
+                      room.status === "AVAILABLE"
                         ? "bg-green-100 text-green-800"
-                        : room.status === "Booked"
+                        : room.status === "FULLY_OCCUPIED"
                         ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
+                        : room.status === "PARTIALLY_OCCUPIED"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {room.status}
+                    {room.status.replace(/_/g, " ")}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -232,7 +248,7 @@ const AdminRoom = () => {
         </table>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
+      <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
         <p className="text-sm text-gray-700">
           Showing {Math.min((page - 1) * ROWS_PER_PAGE + 1, totalItems)} to{" "}
           {Math.min(page * ROWS_PER_PAGE, totalItems)} of {totalItems} results
@@ -241,7 +257,7 @@ const AdminRoom = () => {
           <button
             onClick={() => setPage((old) => Math.max(old - 1, 1))}
             disabled={page === 1}
-            className="mr-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            className="mr-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
           >
             Previous
           </button>
@@ -251,7 +267,7 @@ const AdminRoom = () => {
           <button
             onClick={() => setPage((old) => Math.min(old + 1, totalPages))}
             disabled={page === totalPages}
-            className="ml-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            className="ml-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
           >
             Next
           </button>

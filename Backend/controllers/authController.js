@@ -46,7 +46,7 @@ const signup = async (req, res) => {
         contact: userContact,
         address: userAddress,
         password: hashedPassword,
-        role: "user",
+        role: "STUDENT",
       },
     });
 
