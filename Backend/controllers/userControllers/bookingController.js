@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const socketManager = require("../../socket"); // Adjust the path as needed
 
 const createBooking = async (req, res) => {
   try {
@@ -49,11 +50,19 @@ const createBooking = async (req, res) => {
         isActive: true,
       },
       include: {
-        user: true,
-        hostel: true,
-        package: true,
+        user: { select: { id: true, name: true, email: true } },
+        hostel: { select: { id: true, hostelName: true } },
+        package: { select: { id: true, name: true } },
       },
     });
+
+    try {
+      const io = socketManager.getIO();
+      io.emit("newBooking", booking);
+      console.log("New booking event emitted successfully");
+    } catch (socketError) {
+      console.error("Error emitting new booking event:", socketError);
+    }
 
     res.status(201).json({
       message: "Booking request created successfully",

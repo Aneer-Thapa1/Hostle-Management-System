@@ -21,7 +21,8 @@
     "node-pty-prebuilt-multiarch": "^0.10.1-pre.5",
     "nodemailer": "^6.9.14",
     "nodemon": "^3.1.0",
-    "react-router-dom": "^6.23.1"
+    "react-router-dom": "^6.23.1",
+    "socket.io": "^4.8.0"
   },
   "devDependencies": {
     "prisma": "^5.16.2"

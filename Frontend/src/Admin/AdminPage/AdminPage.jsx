@@ -13,12 +13,11 @@ import { AiFillEye } from "react-icons/ai";
 import AdminDashboard from "../AdminComponent/AdminDashboard";
 import AdminBookings from "../AdminComponent/AdminBookings";
 import AdminRooms from "../AdminComponent/AdminRoom";
-import AdminDeals from "../AdminComponent/AdminDeal";
 import AdminPayments from "../AdminComponent/AdminPayments";
-import AdminReports from "../AdminComponent/AdminReports";
 import AdminSettings from "../AdminComponent/AdminSettings";
 import AdminUserView from "../AdminComponent/AdminUserView";
 import AdminStudents from "../AdminComponent/AdminStudents.jsx";
+import AdminChats from "../AdminComponent/AdminChats.jsx";
 
 const AdminPage = () => {
   const [active, setActive] = useState("dashboard");
@@ -45,7 +44,7 @@ const AdminPage = () => {
     { id: "students", icon: MdOutlineBedroomParent, label: "Students" },
 
     { id: "payments", icon: GiMoneyStack, label: "Payments" },
-    { id: "reports", icon: RiCustomerService2Line, label: "Reports" },
+    { id: "chats", icon: RiCustomerService2Line, label: "Chats" },
     { id: "user-view", icon: AiFillEye, label: "User View" },
     { id: "settings", icon: FiSettings, label: "Settings" },
   ];
@@ -60,8 +59,8 @@ const AdminPage = () => {
         return <AdminRooms setModel={setModel} setEditData={setEditData} />;
       case "payments":
         return <AdminPayments />;
-      case "reports":
-        return <AdminReports />;
+      case "chats":
+        return <AdminChats />;
       case "user-view":
         return <AdminUserView />;
       case "settings":

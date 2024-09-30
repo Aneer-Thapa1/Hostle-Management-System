@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import io from "socket.io-client";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
+const socket = io(apiUrl);
 
 const AdminBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -10,7 +14,7 @@ const AdminBookings = () => {
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [bookingsPerPage] = useState(10);
+  const [bookingsPerPage] = useState(8);
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "ascending",
@@ -26,6 +30,24 @@ const AdminBookings = () => {
 
   useEffect(() => {
     fetchBookings();
+
+    // Set up Socket.IO listener
+    socket.on("newBooking", (newBooking) => {
+      setBookings((prevBookings) => [newBooking, ...prevBookings]);
+      toast.info(`New booking received from ${newBooking.user.name}!`, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    });
+
+    // Cleanup function
+    return () => {
+      socket.off("newBooking");
+    };
   }, [statusFilter]);
 
   const fetchBookings = async () => {
@@ -127,7 +149,8 @@ const AdminBookings = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
+    <div className="container mx-auto p-6 bg-gray-100 h-fit">
+      <ToastContainer />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Booking Management</h1>
         <div className="flex items-center">
