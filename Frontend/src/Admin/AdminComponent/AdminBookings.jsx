@@ -10,15 +10,19 @@ const socket = io(apiUrl);
 
 const AdminBookings = () => {
   const [bookings, setBookings] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [bookingsPerPage] = useState(8);
+  const [bookingsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "ascending",
   });
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
+  const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [showRoomModal, setShowRoomModal] = useState(false);
 
   const axiosInstance = axios.create({
     baseURL: apiUrl,
@@ -30,8 +34,8 @@ const AdminBookings = () => {
 
   useEffect(() => {
     fetchBookings();
+    fetchRooms();
 
-    // Set up Socket.IO listener
     socket.on("newBooking", (newBooking) => {
       setBookings((prevBookings) => [newBooking, ...prevBookings]);
       toast.info(`New booking received from ${newBooking.user.name}!`, {
@@ -44,7 +48,6 @@ const AdminBookings = () => {
       });
     });
 
-    // Cleanup function
     return () => {
       socket.off("newBooking");
     };
@@ -66,13 +69,38 @@ const AdminBookings = () => {
     }
   };
 
-  const handleAccept = async (id) => {
+  const fetchRooms = async () => {
     try {
-      await axiosInstance.post(`/api/booking/acceptBooking`, { bookingId: id });
+      const response = await axiosInstance.get("/api/rooms/getRooms");
+      setRooms(response.data.data || []);
+    } catch (err) {
+      console.error("Error fetching rooms:", err);
+    }
+  };
+
+  const handleAccept = (id) => {
+    setSelectedBookingId(id);
+    setShowRoomModal(true);
+  };
+
+  const confirmAccept = async () => {
+    if (!selectedRoomId) {
+      toast.error("Please select a room");
+      return;
+    }
+    try {
+      await axiosInstance.post(`/api/booking/acceptBooking`, {
+        bookingId: selectedBookingId,
+        roomId: selectedRoomId,
+      });
       fetchBookings();
+      setShowRoomModal(false);
+      setSelectedBookingId(null);
+      setSelectedRoomId("");
+      toast.success("Booking accepted successfully");
     } catch (err) {
       console.error("Error accepting booking:", err);
-      setError("Failed to accept booking. Please try again.");
+      toast.error("Failed to accept booking. Please try again.");
     }
   };
 
@@ -80,9 +108,10 @@ const AdminBookings = () => {
     try {
       await axiosInstance.post(`/api/booking/rejectBooking`, { bookingId: id });
       fetchBookings();
+      toast.success("Booking rejected successfully");
     } catch (err) {
       console.error("Error rejecting booking:", err);
-      setError("Failed to reject booking. Please try again.");
+      toast.error("Failed to reject booking. Please try again.");
     }
   };
 
@@ -149,7 +178,7 @@ const AdminBookings = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 bg-gray-100 h-fit">
+    <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
       <ToastContainer />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Booking Management</h1>
@@ -278,6 +307,59 @@ const AdminBookings = () => {
           </button>
         ))}
       </div>
+
+      {/* Room Selection Modal */}
+      {showRoomModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 className="text-lg font-bold mb-4">Select a Room</h3>
+            <select
+              value={selectedRoomId}
+              onChange={(e) => setSelectedRoomId(e.target.value)}
+              className="w-full p-2 border rounded mb-4"
+            >
+              <option value="">Select a room</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.roomIdentifier} - {room.type} - Available:{" "}
+                  {room.availableSpots}
+                </option>
+              ))}
+            </select>
+            {selectedRoomId && (
+              <div className="mb-4">
+                <h4 className="font-bold">Room Details:</h4>
+                {rooms
+                  .filter((room) => room.id === parseInt(selectedRoomId))
+                  .map((room) => (
+                    <div key={room.id}>
+                      <p>Type: {room.type}</p>
+                      <p>Floor: {room.floor}</p>
+                      <p>Capacity: {room.totalCapacity}</p>
+                      <p>Available Spots: {room.availableSpots}</p>
+                      <p>Price: ${room.price}</p>
+                      <p>Amenities: {room.amenities}</p>
+                    </div>
+                  ))}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <button
+                onClick={confirmAccept}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setShowRoomModal(false)}
+                className="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

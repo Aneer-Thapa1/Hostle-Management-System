@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "react-query";
 import axios from "axios";
 import Navbar from "../components/Navbar";
@@ -12,6 +12,7 @@ import {
   FaUsers,
   FaMoneyBillWave,
   FaSpinner,
+  FaComments,
 } from "react-icons/fa";
 import HostelInformation from "../components/HostelInformation";
 import PackageSummary from "../components/PackeageSummary";
@@ -82,6 +83,7 @@ const Hostel = () => {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const {
     data: hostelData,
@@ -127,11 +129,55 @@ const Hostel = () => {
     }
   );
 
+  const createOrSelectConversation = useMutation(
+    (hostelId) =>
+      axiosInstance.post(
+        "/api/chat/conversations",
+        {
+          participantIds: [hostelId],
+          participantType: "HOSTEL_OWNER",
+        },
+        {
+          headers: getAuthHeader(),
+        }
+      ),
+    {
+      onSuccess: (data) => {
+        if (data && data.data && data.data.id) {
+          navigate(`/messages?conversationId=${data.data.id}`);
+        } else {
+          console.error("Invalid response from create conversation API:", data);
+          alert("Failed to start the chat. Please try again.");
+        }
+      },
+      onError: (error) => {
+        console.error(
+          "Error creating conversation:",
+          error.response?.data || error
+        );
+        alert(
+          `Failed to start the chat: ${
+            error.response?.data?.error || error.message
+          }`
+        );
+      },
+    }
+  );
+
   const handleBookingSubmit = (bookingInfo) => {
     bookingMutation.mutate({
       hostelId: id,
       ...bookingInfo,
     });
+  };
+
+  const handleStartChat = () => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      alert("Please log in to start a chat.");
+      return;
+    }
+    createOrSelectConversation.mutate(id);
   };
 
   if (isLoading)
@@ -171,7 +217,7 @@ const Hostel = () => {
   };
 
   const MapModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
       <div className="bg-white w-11/12 h-5/6 rounded-lg p-4 relative">
         <button
           onClick={() => setIsMapModalOpen(false)}
@@ -295,12 +341,28 @@ const Hostel = () => {
                     </p>
                   </div>
                 </div>
-                <button
-                  className="bg-primaryColor rounded-lg py-3 text-white font-medium hover:bg-primaryColor-dark transition-colors duration-200"
-                  onClick={() => setIsBookingModalOpen(true)}
-                >
-                  Send Booking Request
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    className="flex-1 bg-primaryColor rounded-lg py-3 text-white font-medium hover:bg-primaryColor-dark transition-colors duration-200"
+                    onClick={() => setIsBookingModalOpen(true)}
+                  >
+                    Send Booking
+                  </button>
+                  <button
+                    className="flex-1 bg-green-600 rounded-lg py-3 text-white font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+                    onClick={handleStartChat}
+                    disabled={createOrSelectConversation.isLoading}
+                  >
+                    {createOrSelectConversation.isLoading ? (
+                      <FaSpinner className="animate-spin mr-2" />
+                    ) : (
+                      <FaComments className="mr-2" />
+                    )}
+                    {createOrSelectConversation.isLoading
+                      ? "Starting..."
+                      : "Start Chat"}
+                  </button>
+                </div>
               </div>
 
               <div className="w-full h-64 rounded-lg overflow-hidden z-0 relative shadow-lg">
@@ -330,13 +392,7 @@ const Hostel = () => {
               </div>
             </div>
           </div>
-          <p className="text-gray-300 text-lg leading-relaxed">
-            {hostelData.description}
-          </p>
-        </div>
-
-        <div className="flex w-full max-w-6xl flex-col gap-8">
-          <div className="flex flex-wrap gap-6 text-white">
+          <div className="flex gap-6 text-white">
             {[
               "Hostel Information",
               "Package Summary",
