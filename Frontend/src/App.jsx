@@ -13,6 +13,7 @@ import HostSignup from "./Admin/AdminPage/HostSignup";
 import Hostel from "./User/pages/Hostel";
 import Home from "./User/pages/Home";
 import Hostels from "./User/pages/Hostels";
+import UserChatInterface from "./User/pages/UserChatInterface";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => {
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/hostels" element={<Hostels />} />
           <Route path="/hostel/:id" element={<Hostel />} />
+          <Route path="/messages" element={<UserChatInterface />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

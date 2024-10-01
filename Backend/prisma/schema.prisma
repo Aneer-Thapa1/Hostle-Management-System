@@ -8,39 +8,41 @@ datasource db {
 }
 
 model User {
-  id                Int                @id @default(autoincrement())
+  id                Int                       @id @default(autoincrement())
   name              String
-  email             String             @unique
+  email             String                    @unique
   password          String
   address           String?
   contact           String
-  role              UserRole           @default(STUDENT)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  role              UserRole                  @default(STUDENT)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
   bookings          Booking[]
   ratings           Rating[]
   favorites         Favorite[]
   hostelMemberships HostelMembership[]
   payments          Payment[]
   stayHistories     StayHistory[]
+  conversations     ConversationParticipant[]
+  messageReads      MessageRead[]
 }
 
 model HostelOwner {
-  id                Int                @id @default(autoincrement())
+  id                Int                       @id @default(autoincrement())
   hostelName        String
   ownerName         String
-  email             String             @unique
+  email             String                    @unique
   password          String
   contact           String
   location          String
   address           String
   latitude          Float
   longitude         Float
-  description       String             @db.Text
+  description       String                    @db.Text
   mainPhoto         String
-  avgRating         Float              @default(0)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  avgRating         Float                     @default(0)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
   rooms             Room[]
   bookings          Booking[]
   ratings           Rating[]
@@ -52,6 +54,8 @@ model HostelOwner {
   nearbyAttractions NearbyAttraction[]
   hostelMemberships HostelMembership[]
   stayHistories     StayHistory[]
+  conversations     ConversationParticipant[]
+  messageReads      MessageRead[]
 }
 
 model Room {
@@ -59,13 +63,13 @@ model Room {
   roomIdentifier   String
   type             RoomType
   floor            Int
-  amenities        Json // Changed from String to Json
+  amenities        Json
   status           RoomStatus  @default(AVAILABLE)
   totalCapacity    Int
   currentOccupancy Int         @default(0)
   availableSpots   Int
   description      String      @db.Text
-  price            Decimal     @db.Decimal(10, 2) // Changed from Float to Decimal
+  price            Decimal     @db.Decimal(10, 2)
   roomCondition    String
   dateAvailable    DateTime
   hostelOwnerId    Int
@@ -90,7 +94,7 @@ model Booking {
   checkInDate       DateTime
   checkOutDate      DateTime
   numberOfOccupants Int
-  totalPrice        Decimal           @db.Decimal(10, 2) // Changed from Float to Decimal
+  totalPrice        Decimal           @db.Decimal(10, 2)
   status            BookingStatus     @default(PENDING)
   isActive          Boolean           @default(true)
   createdAt         DateTime          @default(now())
@@ -131,9 +135,9 @@ model Package {
   id                Int                @id @default(autoincrement())
   name              String
   description       String             @db.Text
-  price             Decimal            @db.Decimal(10, 2) // Changed from Float to Decimal
+  price             Decimal            @db.Decimal(10, 2)
   duration          Int
-  services          Json // Changed from String to Json
+  services          Json
   mealPlan          String
   hostelOwnerId     Int
   hostelOwner       HostelOwner        @relation(fields: [hostelOwnerId], references: [id])
@@ -168,7 +172,7 @@ model HostelMembership {
 
 model Payment {
   id                 Int              @id @default(autoincrement())
-  amount             Decimal          @db.Decimal(10, 2) // Changed from Float to Decimal
+  amount             Decimal          @db.Decimal(10, 2)
   paymentDate        DateTime         @default(now())
   paymentMethod      PaymentMethod
   status             PaymentStatus    @default(PENDING)
@@ -194,7 +198,7 @@ model StayHistory {
   checkOutDate DateTime
   packageName  String
   roomType     RoomType
-  totalPrice   Decimal     @db.Decimal(10, 2) // Changed from Float to Decimal
+  totalPrice   Decimal     @db.Decimal(10, 2)
   createdAt    DateTime    @default(now())
 
   @@index([userId, hostelId])
@@ -230,7 +234,7 @@ model Meal {
   id            Int         @id @default(autoincrement())
   name          String
   description   String      @db.Text
-  price         Decimal     @db.Decimal(10, 2) // Changed from Float to Decimal
+  price         Decimal     @db.Decimal(10, 2)
   isVegan       Boolean
   isGlutenFree  Boolean
   available     Boolean
@@ -245,7 +249,7 @@ model Meal {
 model NearbyAttraction {
   id            Int         @id @default(autoincrement())
   name          String
-  distance      Decimal     @db.Decimal(5, 2) // Changed from String to Decimal
+  distance      Decimal     @db.Decimal(5, 2)
   type          String
   openingHours  String?
   description   String?     @db.Text
@@ -255,6 +259,63 @@ model NearbyAttraction {
   updatedAt     DateTime    @updatedAt
 
   @@index([hostelOwnerId])
+}
+
+// New Chat Models
+model Conversation {
+  id            String                    @id @default(uuid())
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  lastMessageAt DateTime                  @default(now())
+  messages      Message[]
+  participants  ConversationParticipant[]
+
+  @@index([lastMessageAt])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         Int?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hostelOwnerId  Int?
+  hostelOwner    HostelOwner? @relation(fields: [hostelOwnerId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime     @default(now())
+  leftAt         DateTime?
+
+  @@unique([conversationId, userId])
+  @@unique([conversationId, hostelOwnerId])
+  @@index([conversationId, userId, hostelOwnerId])
+}
+
+model Message {
+  id             String        @id @default(uuid())
+  conversationId String
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       Int
+  senderType     SenderType
+  content        String        @db.Text
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  readBy         MessageRead[]
+
+  @@index([conversationId, createdAt])
+}
+
+model MessageRead {
+  id            String       @id @default(uuid())
+  messageId     String
+  message       Message      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId        Int?
+  user          User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hostelOwnerId Int?
+  hostelOwner   HostelOwner? @relation(fields: [hostelOwnerId], references: [id], onDelete: Cascade)
+  readAt        DateTime     @default(now())
+
+  @@unique([messageId, userId])
+  @@unique([messageId, hostelOwnerId])
+  @@index([messageId, userId, hostelOwnerId])
 }
 
 enum UserRole {
@@ -305,4 +366,9 @@ enum PaymentMethod {
   BANK_TRANSFER
   CASH
   MOBILE_PAYMENT
+}
+
+enum SenderType {
+  USER
+  HOSTEL_OWNER
 }

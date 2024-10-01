@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
 const socketManager = require("../../socket"); // Adjust the path as needed
+
+const prisma = new PrismaClient();
 
 const createBooking = async (req, res) => {
   try {
@@ -124,6 +125,7 @@ const getBookings = async (req, res) => {
 const acceptBooking = async (req, res) => {
   const { bookingId, roomId } = req.body;
 
+  console.log(bookingId, roomId);
   try {
     // Start a transaction
     const result = await prisma.$transaction(async (prisma) => {

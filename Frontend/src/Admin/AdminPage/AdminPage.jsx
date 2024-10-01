@@ -18,6 +18,7 @@ import AdminSettings from "../AdminComponent/AdminSettings";
 import AdminUserView from "../AdminComponent/AdminUserView";
 import AdminStudents from "../AdminComponent/AdminStudents.jsx";
 import AdminChats from "../AdminComponent/AdminChats.jsx";
+import AdminFloatingChatInterface from "../AdminComponent/AdminFloatingChatInterface.jsx";
 
 const AdminPage = () => {
   const [active, setActive] = useState("dashboard");
@@ -125,7 +126,7 @@ const AdminPage = () => {
         </div>
         {renderComponent()}
       </div>
-
+      <AdminFloatingChatInterface />
       {/* ADD ROOM POPUP MODEL */}
       {openModel && <AddHostel setModel={setModel} editData={editData} />}
     </div>

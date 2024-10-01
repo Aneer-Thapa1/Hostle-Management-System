@@ -1,4 +1,5 @@
 const authRoutes = require("./authRoute");
+const chatRoutes = require("./chatRoute");
 const roomRoutes = require("./adminRoute/roomRoute");
 const authMiddleware = require("../middleware/authMiddleware");
 const hostelRoutes = require("./userRoute/hostelRoute");
@@ -15,6 +16,7 @@ const setupRoutes = (app) => {
   app.use("/api/booking", authMiddleware, bookingRoutes);
   app.use("/api/content", authMiddleware, hostelContent);
   app.use("/api/membership", authMiddleware, membershipRoute);
+  app.use("/api/chat", authMiddleware, chatRoutes);
 };
 
 module.exports = setupRoutes;
