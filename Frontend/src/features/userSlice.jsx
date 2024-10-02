@@ -1,8 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
+const getUserFromLocalStorage = () => {
+  const user = localStorage.getItem("user");
+  return user ? JSON.parse(user) : null;
+};
+
 const initialState = {
-  user: null,
+  user: getUserFromLocalStorage(),
   status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
   error: null,
 };
@@ -13,7 +18,8 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await axios.post(
         "http://localhost:8870/api/auth/login",
-        { email, password }
+        { email, password },
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
@@ -27,6 +33,7 @@ export const logoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await axios.post("http://localhost:8870/api/auth/logout");
+      localStorage.removeItem("user");
       return null;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -38,8 +45,13 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    updateUser: (state, action) => {
-      state.user = { ...state.user, ...action.payload };
+    setUser: (state, action) => {
+      state.user = action.payload;
+      localStorage.setItem("user", JSON.stringify(action.payload));
+    },
+    clearUser: (state) => {
+      state.user = null;
+      localStorage.removeItem("user");
     },
   },
   extraReducers: (builder) => {
@@ -51,6 +63,7 @@ const userSlice = createSlice({
         state.status = "succeeded";
         state.user = action.payload.user;
         state.error = null;
+        localStorage.setItem("user", JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = "failed";
@@ -64,6 +77,11 @@ const userSlice = createSlice({
   },
 });
 
-export const { updateUser } = userSlice.actions;
+export const { setUser, clearUser } = userSlice.actions;
 
 export default userSlice.reducer;
+
+// Selectors
+export const selectUser = (state) => state.user.user;
+export const selectUserStatus = (state) => state.user.status;
+export const selectUserError = (state) => state.user.error;

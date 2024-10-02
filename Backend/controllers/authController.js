@@ -82,14 +82,14 @@ const login = async (req, res) => {
       where: { email: email },
     });
 
-    let role = "user";
+    let role = "STUDENT";
 
     // If not found in 'user', attempt to find in 'hostelOwner'
     if (!user) {
       user = await prisma.hostelOwner.findUnique({
         where: { email: email },
       });
-      role = "hostelOwner";
+      role = "HOSTEL_OWNER";
     }
 
     // If neither found, return an error
@@ -112,8 +112,8 @@ const login = async (req, res) => {
     const payload = {
       user: {
         id: user.id,
-        email: role === "user" ? user.userEmail : user.email,
-        role: role,
+        email: role === "STUDENT" ? user.userEmail : user.email,
+        role: role === "STUDENT" ? "STUDENT" : "HOSTEL_OWNER",
       },
     };
 
@@ -137,8 +137,8 @@ const login = async (req, res) => {
       token: token, // Include token in response body
       user: {
         id: user.id,
-        name: role === "user" ? user.userName : user.ownerName,
-        email: role === "user" ? user.userEmail : user.email,
+        name: role === "STUDENT" ? user.userName : user.ownerName,
+        email: role === "STUDENT" ? user.userEmail : user.email,
         role: role,
       },
     });

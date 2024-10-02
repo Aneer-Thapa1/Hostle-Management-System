@@ -1,17 +1,35 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import io from "socket.io-client";
+import { useSelector } from "react-redux";
 import axios from "axios";
 import Navbar from "../components/Navbar";
-import { FaSearch, FaRegPaperPlane, FaUserCircle } from "react-icons/fa";
+import {
+  FaSearch,
+  FaRegPaperPlane,
+  FaUserCircle,
+  FaSpinner,
+} from "react-icons/fa";
+import { useSocket } from "../../features/SocketContext";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
-const socket = io(apiUrl);
 
 const axiosInstance = axios.create({
   baseURL: apiUrl,
   withCredentials: true,
 });
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 const UserChatInterface = () => {
   const [conversations, setConversations] = useState([]);
@@ -19,72 +37,54 @@ const UserChatInterface = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const messageEndRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
+  const socket = useSocket();
+  const currentUser = useSelector((state) => state.user);
+
+  const fetchConversations = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axiosInstance.get("/api/chat/conversations");
+      setConversations(response.data);
+      console.log("Fetched conversations:", response.data);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      setError("Failed to load conversations. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchConversations();
-    const queryParams = new URLSearchParams(location.search);
-    const hostelId = queryParams.get("hostelId");
-    if (hostelId) {
-      createOrSelectConversation(hostelId);
+  }, [fetchConversations]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("getMessage", handleNewMessage);
+
+      return () => {
+        socket.off("getMessage");
+      };
     }
-
-    socket.on("new message", handleNewMessage);
-    socket.on("message read", handleMessageRead);
-
-    return () => {
-      socket.off("new message", handleNewMessage);
-      socket.off("message read", handleMessageRead);
-    };
-  }, [location]);
+  }, [socket]);
 
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation.id);
-      socket.emit("join conversation", selectedConversation.id);
     }
-    return () => {
-      if (selectedConversation) {
-        socket.emit("leave conversation", selectedConversation.id);
-      }
-    };
   }, [selectedConversation]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const fetchConversations = async () => {
-    try {
-      const response = await axiosInstance.get("/api/chat/conversations");
-      setConversations(response.data);
-    } catch (error) {
-      console.error("Error fetching conversations:", error);
-    }
-  };
-
-  const createOrSelectConversation = async (hostelId) => {
-    try {
-      const response = await axiosInstance.post("/api/chat/conversations", {
-        hostelId,
-      });
-      const newConversation = response.data;
-      setConversations((prevConversations) => {
-        const exists = prevConversations.some(
-          (conv) => conv.id === newConversation.id
-        );
-        if (!exists) {
-          return [...prevConversations, newConversation];
-        }
-        return prevConversations;
-      });
-      setSelectedConversation(newConversation);
-    } catch (error) {
-      console.error("Error creating/selecting conversation:", error);
-    }
-  };
 
   const fetchMessages = async (conversationId) => {
     try {
@@ -94,6 +94,7 @@ const UserChatInterface = () => {
       setMessages(response.data);
     } catch (error) {
       console.error("Error fetching messages:", error);
+      setError("Failed to load messages. Please try again.");
     }
   };
 
@@ -107,33 +108,31 @@ const UserChatInterface = () => {
         content: newMessage,
       });
       const sentMessage = response.data;
+
       setMessages((prevMessages) => [...prevMessages, sentMessage]);
-      setNewMessage("");
       updateConversationLastMessage(sentMessage);
+      setNewMessage("");
+
+      if (socket) {
+        socket.emit("sendMessage", {
+          receiverId: selectedConversation.otherParticipant.id,
+          data: sentMessage,
+        });
+        console.log("Message emitted through socket:", sentMessage);
+      } else {
+        console.warn("Socket not connected. Message not emitted.");
+      }
     } catch (error) {
       console.error("Error sending message:", error);
+      setError("Failed to send message. Please try again.");
     }
   };
 
-  const handleNewMessage = (message) => {
-    if (
-      selectedConversation &&
-      message.conversationId === selectedConversation.id
-    ) {
-      setMessages((prevMessages) => [...prevMessages, message]);
-    }
-    updateConversationLastMessage(message);
-  };
-
-  const handleMessageRead = ({ messageId, conversationId }) => {
-    if (selectedConversation && conversationId === selectedConversation.id) {
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) =>
-          msg.id === messageId ? { ...msg, read: true } : msg
-        )
-      );
-    }
-  };
+  const handleNewMessage = useCallback((data) => {
+    console.log("New message received:", data);
+    setMessages((prevMessages) => [...prevMessages, data]);
+    updateConversationLastMessage(data);
+  }, []);
 
   const updateConversationLastMessage = (message) => {
     setConversations((prevConversations) =>
@@ -142,7 +141,7 @@ const UserChatInterface = () => {
           ? {
               ...conv,
               lastMessage: message.content,
-              timestamp: message.createdAt,
+              lastMessageAt: message.createdAt,
               unread:
                 conv.id !== selectedConversation?.id
                   ? (conv.unread || 0) + 1
@@ -170,13 +169,41 @@ const UserChatInterface = () => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredConversations = conversations.filter((conv) => {
+    if (!conv || !conv.otherParticipant || !conv.otherParticipant.hostelName) {
+      console.log("Invalid conversation object:", conv);
+      return false;
+    }
+    return conv.otherParticipant.hostelName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase() || "");
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
+        <FaSpinner className="animate-spin mr-2" />
+        <span>Loading conversations...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-900 h-screen flex flex-col text-white">
       <Navbar />
+      {!socket && (
+        <div className="bg-red-500 text-white p-2 text-center">
+          Socket disconnected. Trying to reconnect...
+        </div>
+      )}
       <div className="flex-grow flex flex-col overflow-hidden p-4">
         <h1 className="text-3xl font-bold mb-4">Messages</h1>
         <div className="flex-grow flex bg-gray-800 rounded-lg overflow-hidden shadow-xl">
@@ -195,41 +222,56 @@ const UserChatInterface = () => {
               </div>
             </div>
             <div className="flex-grow overflow-y-auto">
-              {filteredConversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  className={`p-3 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors duration-200 ${
-                    selectedConversation?.id === conv.id ? "bg-gray-700" : ""
-                  }`}
-                  onClick={() => {
-                    setSelectedConversation(conv);
-                    markMessagesAsRead(conv.id);
-                  }}
-                >
-                  <div className="flex items-center">
-                    <FaUserCircle className="text-gray-400 text-2xl mr-3" />
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-center">
-                        <h3 className="font-semibold text-sm">{conv.name}</h3>
-                        <span className="text-xs text-gray-400">
-                          {new Date(conv.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+              {filteredConversations.length > 0 ? (
+                filteredConversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`p-3 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors duration-200 ${
+                      selectedConversation?.id === conv.id ? "bg-gray-700" : ""
+                    }`}
+                    onClick={() => {
+                      setSelectedConversation(conv);
+                      markMessagesAsRead(conv.id);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <FaUserCircle className="text-gray-400 text-2xl mr-3" />
+                      <div className="flex-grow">
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-semibold text-sm">
+                            {conv.otherParticipant.hostelName}
+                          </h3>
+                          <span className="text-xs text-gray-400">
+                            {conv.lastMessageAt &&
+                              new Date(conv.lastMessageAt).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1 truncate">
+                          {conv.lastMessage &&
+                          typeof conv.lastMessage === "object"
+                            ? conv.lastMessage.content
+                            : conv.lastMessage || "No messages yet"}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1 truncate">
-                        {conv.lastMessage}
-                      </p>
                     </div>
+                    {conv.unread > 0 && (
+                      <span className="inline-block bg-primaryColor text-white text-xs rounded-full px-2 py-1 mt-2">
+                        {conv.unread} new
+                      </span>
+                    )}
                   </div>
-                  {conv.unread > 0 && (
-                    <span className="inline-block bg-primaryColor text-white text-xs rounded-full px-2 py-1 mt-2">
-                      {conv.unread} new
-                    </span>
-                  )}
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-center text-gray-400 mt-4">
+                  No conversations found
+                </p>
+              )}
             </div>
           </div>
 
@@ -240,7 +282,7 @@ const UserChatInterface = () => {
                 <div className="bg-gray-800 p-4 border-b border-gray-700 flex items-center">
                   <FaUserCircle className="text-gray-400 text-3xl mr-3" />
                   <h2 className="text-xl font-bold">
-                    {selectedConversation.name}
+                    {selectedConversation.otherParticipant.hostelName}
                   </h2>
                 </div>
                 <div className="flex-grow overflow-y-auto p-4">
@@ -248,16 +290,18 @@ const UserChatInterface = () => {
                     <div
                       key={message.id}
                       className={`mb-4 flex ${
-                        message.senderId === "user"
-                          ? "justify-end"
-                          : "justify-start"
+                        message.senderId ===
+                        selectedConversation.otherParticipant.id
+                          ? "justify-start"
+                          : "justify-end"
                       }`}
                     >
                       <div
                         className={`max-w-[70%] p-3 rounded-lg ${
-                          message.senderId === "user"
-                            ? "bg-primaryColor text-white rounded-br-none"
-                            : "bg-gray-700 text-white rounded-bl-none"
+                          message.senderId ===
+                          selectedConversation.otherParticipant.id
+                            ? "bg-gray-700 text-white rounded-bl-none"
+                            : "bg-primaryColor text-white rounded-br-none"
                         }`}
                       >
                         {message.content}
