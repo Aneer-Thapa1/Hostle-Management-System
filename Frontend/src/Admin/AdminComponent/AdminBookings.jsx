@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
-import io from "socket.io-client";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -29,6 +28,7 @@ const AdminBookings = () => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${localStorage.getItem("token")}`,
     },
+    timeout: 10000, // 10 seconds timeout
   });
 
   const fetchBookings = async () => {
@@ -53,8 +53,30 @@ const AdminBookings = () => {
       setRooms(response.data.data || []);
     } catch (err) {
       console.error("Error fetching rooms:", err);
+      toast.error("Failed to fetch rooms. Please try again.");
     }
   };
+
+  const fetchBookingsWithRetry = async (retries = 3) => {
+    try {
+      await fetchBookings();
+    } catch (error) {
+      if (retries > 0) {
+        console.log(`Retrying... Attempts left: ${retries - 1}`);
+        await fetchBookingsWithRetry(retries - 1);
+      } else {
+        setError(
+          "Failed to fetch bookings after multiple attempts. Please try again later."
+        );
+        setLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchBookingsWithRetry();
+    fetchRooms();
+  }, [statusFilter]);
 
   const handleAccept = (id) => {
     setSelectedBookingId(id);
@@ -71,7 +93,7 @@ const AdminBookings = () => {
         bookingId: selectedBookingId,
         roomId: selectedRoomId,
       });
-      fetchBookings();
+      await fetchBookings();
       setShowRoomModal(false);
       setSelectedBookingId(null);
       setSelectedRoomId("");
@@ -85,7 +107,7 @@ const AdminBookings = () => {
   const handleReject = async (id) => {
     try {
       await axiosInstance.post(`/api/booking/rejectBooking`, { bookingId: id });
-      fetchBookings();
+      await fetchBookings();
       toast.success("Booking rejected successfully");
     } catch (err) {
       console.error("Error rejecting booking:", err);
@@ -101,7 +123,7 @@ const AdminBookings = () => {
     setSortConfig({ key, direction });
   };
 
-  const sortedBookings = React.useMemo(() => {
+  const sortedBookings = useMemo(() => {
     let sortableBookings = [...bookings];
     if (sortConfig.key) {
       sortableBookings.sort((a, b) => {

@@ -17,7 +17,6 @@ import AdminPayments from "../AdminComponent/AdminPayments";
 import AdminSettings from "../AdminComponent/AdminSettings";
 import AdminUserView from "../AdminComponent/AdminUserView";
 import AdminStudents from "../AdminComponent/AdminStudents.jsx";
-import AdminChats from "../AdminComponent/AdminChats.jsx";
 import AdminFloatingChatInterface from "../AdminComponent/AdminFloatingChatInterface.jsx";
 
 const AdminPage = () => {
@@ -43,11 +42,8 @@ const AdminPage = () => {
     { id: "bookings", icon: FaRegCalendarAlt, label: "Bookings" },
     { id: "rooms", icon: MdOutlineBedroomParent, label: "Rooms" },
     { id: "students", icon: MdOutlineBedroomParent, label: "Students" },
-
     { id: "payments", icon: GiMoneyStack, label: "Payments" },
-    { id: "chats", icon: RiCustomerService2Line, label: "Chats" },
     { id: "user-view", icon: AiFillEye, label: "User View" },
-    { id: "settings", icon: FiSettings, label: "Settings" },
   ];
 
   const renderComponent = () => {
@@ -60,12 +56,9 @@ const AdminPage = () => {
         return <AdminRooms setModel={setModel} setEditData={setEditData} />;
       case "payments":
         return <AdminPayments />;
-      case "chats":
-        return <AdminChats />;
+
       case "user-view":
         return <AdminUserView />;
-      case "settings":
-        return <AdminSettings />;
       case "students":
         return <AdminStudents />;
       default:

@@ -53,7 +53,6 @@ const UserChatInterface = () => {
     try {
       const response = await axiosInstance.get("/api/chat/conversations");
       setConversations(response.data);
-      console.log("Fetched conversations:", response.data);
     } catch (error) {
       console.error("Error fetching conversations:", error);
       setError("Failed to load conversations. Please try again.");
@@ -291,7 +290,8 @@ const UserChatInterface = () => {
                       key={message.id}
                       className={`mb-4 flex ${
                         message.senderId ===
-                        selectedConversation.otherParticipant.id
+                          selectedConversation.otherParticipant.id &&
+                        message.senderType === "HOSTEL_OWNER"
                           ? "justify-start"
                           : "justify-end"
                       }`}
@@ -299,7 +299,8 @@ const UserChatInterface = () => {
                       <div
                         className={`max-w-[70%] p-3 rounded-lg ${
                           message.senderId ===
-                          selectedConversation.otherParticipant.id
+                            selectedConversation.otherParticipant.id &&
+                          message.senderType === "HOSTEL_OWNER"
                             ? "bg-gray-700 text-white rounded-bl-none"
                             : "bg-primaryColor text-white rounded-br-none"
                         }`}
@@ -325,7 +326,7 @@ const UserChatInterface = () => {
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      className="flex-grow bg-gray-700 border border-gray-600 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-primaryColor text-white"
+                      className="flex-grow bg-gray-700 border border-gray-600 rounded-l-lg p-2 focus:outline-none   text-white"
                       placeholder="Type a message..."
                     />
                     <button
