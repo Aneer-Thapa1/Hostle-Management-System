@@ -130,23 +130,26 @@ const Hostel = () => {
   );
 
   const createOrSelectConversation = useMutation(
-    (hostelId) =>
+    () =>
       axiosInstance.post(
         "/api/chat/conversations",
+        { hostelId: id },
         {
-          participantIds: [hostelId],
-          participantType: "HOSTEL_OWNER",
-        },
-        {
-          headers: getAuthHeader(),
+          headers: {
+            ...getAuthHeader(),
+            "Content-Type": "application/json",
+          },
         }
       ),
     {
-      onSuccess: (data) => {
-        if (data && data.data && data.data.id) {
-          navigate(`/messages?conversationId=${data.data.id}`);
+      onSuccess: (response) => {
+        if (response.data && response.data.id) {
+          navigate(`/messages?conversationId=${response.data.id}`);
         } else {
-          console.error("Invalid response from create conversation API:", data);
+          console.error(
+            "Invalid response from create conversation API:",
+            response
+          );
           alert("Failed to start the chat. Please try again.");
         }
       },
@@ -172,12 +175,7 @@ const Hostel = () => {
   };
 
   const handleStartChat = () => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      alert("Please log in to start a chat.");
-      return;
-    }
-    createOrSelectConversation.mutate(id);
+    createOrSelectConversation.mutate();
   };
 
   if (isLoading)

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useMutation } from "react-query";
-import axios from "axios";
+import { useDispatch } from "react-redux";
+import { loginUser } from "../../features/userSlice";
 import { useNavigate } from "react-router-dom";
 import {
   FaEnvelope,
@@ -10,15 +10,6 @@ import {
   FaEyeSlash,
 } from "react-icons/fa";
 
-const loginUser = async (credentials) => {
-  const response = await axios.post(
-    "http://localhost:8870/api/auth/login",
-    credentials,
-    { withCredentials: true } // This is important for cookies to be set
-  );
-  return response.data;
-};
-
 export default function Login() {
   const [formData, setFormData] = useState({
     email: "",
@@ -27,26 +18,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
-
-  const mutation = useMutation(loginUser, {
-    onSuccess: (data) => {
-      // Store the token in localStorage
-      localStorage.setItem("token", data.token);
-
-      // Redirect based on role
-      if (data.user.role === "hostelOwner") {
-        navigate("/admin");
-      } else {
-        navigate("/home");
-      }
-    },
-    onError: (error) => {
-      console.error(
-        "Login error:",
-        error.response?.data?.message || "An error occurred"
-      );
-    },
-  });
+  const dispatch = useDispatch();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -56,9 +28,28 @@ export default function Login() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    mutation.mutate(formData);
+    try {
+      const resultAction = await dispatch(loginUser(formData));
+      if (loginUser.fulfilled.match(resultAction)) {
+        // Login successful
+        const user = resultAction.payload.user;
+        localStorage.setItem("token", resultAction.payload.token);
+
+        // Redirect based on role
+        if (user.role === "HOSTEL_OWNER") {
+          navigate("/admin");
+        } else {
+          navigate("/home");
+        }
+      } else {
+        // Login failed
+        console.error("Login error:", resultAction.error.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -103,25 +94,11 @@ export default function Login() {
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </button>
           </div>
-          {mutation.isError && (
-            <p className="text-red-500 text-center bg-red-100 border border-red-400 rounded p-2">
-              {mutation.error.response?.data?.message ||
-                "An error occurred. Please try again."}
-            </p>
-          )}
           <button
             type="submit"
             className="w-full py-3 bg-primaryColor text-white font-bold rounded-lg hover:bg-primaryHoverColor transition duration-300 flex items-center justify-center"
-            disabled={mutation.isLoading}
           >
-            {mutation.isLoading ? (
-              <>
-                <FaSpinner className="animate-spin mr-2" />
-                Logging In...
-              </>
-            ) : (
-              "Log In"
-            )}
+            Log In
           </button>
         </form>
         <div className="mt-6 text-center">

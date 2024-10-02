@@ -1,16 +1,8 @@
 const { PrismaClient } = require("@prisma/client");
-const socketManager = require("../../socket"); // Adjust the path as needed
-
 const prisma = new PrismaClient();
 
 const createBooking = async (req, res) => {
   try {
-    if (!req.user) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized: User not authenticated" });
-    }
-
     const userId = req.user.user.id;
     const { hostelId, packageId, checkInDate, numberOfPersons, totalPrice } =
       req.body;
@@ -56,14 +48,6 @@ const createBooking = async (req, res) => {
         package: { select: { id: true, name: true } },
       },
     });
-
-    try {
-      const io = socketManager.getIO();
-      io.emit("newBooking", booking);
-      console.log("New booking event emitted successfully");
-    } catch (socketError) {
-      console.error("Error emitting new booking event:", socketError);
-    }
 
     res.status(201).json({
       message: "Booking request created successfully",
@@ -125,11 +109,8 @@ const getBookings = async (req, res) => {
 const acceptBooking = async (req, res) => {
   const { bookingId, roomId } = req.body;
 
-  console.log(bookingId, roomId);
   try {
-    // Start a transaction
     const result = await prisma.$transaction(async (prisma) => {
-      // Fetch the booking
       const booking = await prisma.booking.findUnique({
         where: { id: parseInt(bookingId) },
         include: { package: true, user: true, hostel: true },
@@ -139,7 +120,6 @@ const acceptBooking = async (req, res) => {
         throw new Error("Booking not found");
       }
 
-      // Fetch the room
       const room = await prisma.room.findUnique({
         where: { id: parseInt(roomId) },
       });
@@ -148,7 +128,6 @@ const acceptBooking = async (req, res) => {
         throw new Error("Room not found");
       }
 
-      // Calculate new occupancy and available spots
       const newOccupancy = room.currentOccupancy + booking.numberOfOccupants;
       const newAvailableSpots = room.totalCapacity - newOccupancy;
 
@@ -156,7 +135,6 @@ const acceptBooking = async (req, res) => {
         throw new Error("Not enough space in the selected room");
       }
 
-      // Update the booking
       const updatedBooking = await prisma.booking.update({
         where: { id: booking.id },
         data: {
@@ -171,7 +149,6 @@ const acceptBooking = async (req, res) => {
         },
       });
 
-      // Update the room's occupancy and available spots
       await prisma.room.update({
         where: { id: room.id },
         data: {
@@ -180,7 +157,6 @@ const acceptBooking = async (req, res) => {
         },
       });
 
-      // Create a membership
       const membership = await prisma.hostelMembership.create({
         data: {
           userId: booking.userId,
@@ -287,4 +263,10 @@ const getUserBookings = async (req, res) => {
   }
 };
 
-module.exports = { createBooking, getBookings, acceptBooking, declineBooking };
+module.exports = {
+  createBooking,
+  getBookings,
+  acceptBooking,
+  declineBooking,
+  getUserBookings,
+};

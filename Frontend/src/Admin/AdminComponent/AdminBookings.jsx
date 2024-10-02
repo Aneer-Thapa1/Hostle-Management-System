@@ -6,7 +6,6 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
-const socket = io(apiUrl);
 
 const AdminBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -31,27 +30,6 @@ const AdminBookings = () => {
       Authorization: `Bearer ${localStorage.getItem("token")}`,
     },
   });
-
-  useEffect(() => {
-    fetchBookings();
-    fetchRooms();
-
-    socket.on("newBooking", (newBooking) => {
-      setBookings((prevBookings) => [newBooking, ...prevBookings]);
-      toast.info(`New booking received from ${newBooking.user.name}!`, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
-    });
-
-    return () => {
-      socket.off("newBooking");
-    };
-  }, [statusFilter]);
 
   const fetchBookings = async () => {
     try {

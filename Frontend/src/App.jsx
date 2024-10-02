@@ -14,25 +14,28 @@ import Hostel from "./User/pages/Hostel";
 import Home from "./User/pages/Home";
 import Hostels from "./User/pages/Hostels";
 import UserChatInterface from "./User/pages/UserChatInterface";
+import { SocketContextProvider } from "./features/SocketContext";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/hostSignup" element={<HostSignup />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/hostels" element={<Hostels />} />
-          <Route path="/hostel/:id" element={<Hostel />} />
-          <Route path="/messages" element={<UserChatInterface />} />
-        </Routes>
-      </BrowserRouter>
+      <SocketContextProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/hostSignup" element={<HostSignup />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/hostels" element={<Hostels />} />
+            <Route path="/hostel/:id" element={<Hostel />} />
+            <Route path="/messages" element={<UserChatInterface />} />
+          </Routes>
+        </BrowserRouter>
+      </SocketContextProvider>
     </QueryClientProvider>
   );
 };
