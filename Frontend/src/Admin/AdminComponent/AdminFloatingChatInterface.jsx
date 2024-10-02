@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useSelector } from "react-redux";
 import axios from "axios";
 import {
   FaSearch,
@@ -7,10 +7,9 @@ import {
   FaUserCircle,
   FaComments,
   FaTimes,
+  FaSpinner,
 } from "react-icons/fa";
-import { useSocket } from "../../features/SocketContext"; // Import useSocket hook
-import { selectUser } from "../../features/userSlice";
-import ErrorBoundary from "../../app/ErrorBoundary";
+import { useSocket } from "../../features/SocketContext";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
@@ -28,6 +27,7 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.log("Axios request interceptor error:", error);
     return Promise.reject(error);
   }
 );
@@ -40,29 +40,36 @@ const AdminFloatingChatInterface = () => {
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const messageEndRef = useRef(null);
 
   const socket = useSocket();
   const currentUser = useSelector((state) => state.user);
-
-  useEffect(() => {
-    if (socket) {
-      socket.on("getMessage", handleNewMessage);
-
-      return () => {
-        socket.off("getMessage");
-      };
+  const fetchConversations = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axiosInstance.get("/api/chat/conversations");
+      console.log("Fetched conversations:", response.data);
+      setConversations(response.data);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      setError("Failed to load conversations. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [socket]);
+  }, []);
 
   useEffect(() => {
     if (isExpanded) {
       fetchConversations();
     }
-  }, [isExpanded]);
+  }, [isExpanded, fetchConversations]);
 
   useEffect(() => {
     if (selectedConversation) {
+      console.log(selectedConversation.id);
       fetchMessages(selectedConversation.id);
     }
   }, [selectedConversation]);
@@ -79,24 +86,15 @@ const AdminFloatingChatInterface = () => {
     setUnreadCount(totalUnread);
   }, [conversations]);
 
-  const fetchConversations = async () => {
-    try {
-      const response = await axiosInstance.get("/api/chat/conversations");
-      setConversations(response.data);
-    } catch (error) {
-      console.error("Error fetching conversations:", error);
-    }
-  };
-
   const fetchMessages = async (conversationId) => {
     try {
       const response = await axiosInstance.get(
         `/api/chat/conversations/${conversationId}/messages`
       );
       setMessages(response.data);
-      console.log(messages);
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      console.log("Error fetching messages:", error);
+      setError("Failed to load messages. Please try again.");
     }
   };
 
@@ -114,38 +112,52 @@ const AdminFloatingChatInterface = () => {
         content: newMessage,
       });
       const sentMessage = response.data;
-      setMessages((prevMessages) => [...prevMessages, sentMessage]);
-      setNewMessage("");
-      updateConversationLastMessage(sentMessage);
 
-      if (socket && isConnected) {
+      setMessages((prevMessages) => [...prevMessages, sentMessage]);
+      updateConversationLastMessage(sentMessage);
+      setNewMessage("");
+
+      if (socket) {
         socket.emit("sendMessage", {
           receiverId: selectedConversation.otherParticipant.id,
           data: sentMessage,
         });
+      } else {
+        console.log("Socket not connected. Message not emitted.");
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.log("Error sending message:", error);
+      setError("Failed to send message. Please try again.");
     }
   };
 
-  const handleNewMessage = (data) => {
-    console.log("New message received:", data);
-    if (
-      selectedConversation &&
-      data.conversationId === selectedConversation.id
-    ) {
-      setMessages((prevMessages) => [...prevMessages, data]);
+  useEffect(() => {
+    if (socket) {
+      socket.on("getMessage", (data) => {
+        console.log("New message received:", data);
+        setMessages((prevMessages) => [...prevMessages, data]);
+        setConversations((prevConversations) =>
+          prevConversations.map((conv) =>
+            conv.id === data.conversationId
+              ? {
+                  ...conv,
+                  lastMessage: data.content,
+                  lastMessageAt: data.createdAt,
+                  unread:
+                    conv.id !== selectedConversation?.id
+                      ? (conv.unread || 0) + 1
+                      : 0,
+                }
+              : conv
+          )
+        );
+      });
+
+      return () => {
+        socket.off("getMessage");
+      };
     }
-    updateConversationLastMessage(data);
-    setConversations((prevConversations) =>
-      prevConversations.map((conv) =>
-        conv.id === data.conversationId
-          ? { ...conv, unread: (conv.unread || 0) + 1 }
-          : conv
-      )
-    );
-  };
+  }, [socket, selectedConversation]);
 
   const updateConversationLastMessage = (message) => {
     setConversations((prevConversations) =>
@@ -155,6 +167,10 @@ const AdminFloatingChatInterface = () => {
               ...conv,
               lastMessage: message.content,
               lastMessageAt: message.createdAt,
+              unread:
+                conv.id !== selectedConversation?.id
+                  ? (conv.unread || 0) + 1
+                  : 0,
             }
           : conv
       )
@@ -170,7 +186,7 @@ const AdminFloatingChatInterface = () => {
         )
       );
     } catch (error) {
-      console.error("Error marking messages as read:", error);
+      console.log("Error marking messages as read:", error);
     }
   };
 
@@ -181,6 +197,8 @@ const AdminFloatingChatInterface = () => {
   const filteredConversations = conversations.filter((conv) =>
     conv.otherParticipant.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  console.log(messages);
 
   return (
     <div className="fixed bottom-2 right-2 z-50">
@@ -208,7 +226,15 @@ const AdminFloatingChatInterface = () => {
             </button>
           </div>
 
-          {!selectedConversation ? (
+          {isLoading ? (
+            <div className="flex-1 flex justify-center items-center">
+              <FaSpinner className="animate-spin text-blue-600" size={24} />
+            </div>
+          ) : error ? (
+            <div className="flex-1 flex justify-center items-center text-red-500">
+              {error}
+            </div>
+          ) : !selectedConversation ? (
             <div className="flex-1 overflow-y-auto p-2">
               <div className="mb-2">
                 <div className="relative">
@@ -241,7 +267,7 @@ const AdminFloatingChatInterface = () => {
                         {conv.otherParticipant.name}
                       </h3>
                       <div className="text-xs text-gray-600 truncate">
-                        {conv.lastMessage || "No messages yet"}
+                        {conv.lastMessage?.content || "No messages yet"}
                       </div>
                     </div>
                   </div>
@@ -271,19 +297,27 @@ const AdminFloatingChatInterface = () => {
                   <div
                     key={message.id}
                     className={`mb-2 flex ${
-                      message.senderType === "HOSTEL_OWNER"
+                      message.senderType === "HOSTEL_OWNER" &&
+                      message.senderId === currentUser.user.id
                         ? "justify-end"
                         : "justify-start"
                     }`}
                   >
                     <div
                       className={`max-w-[70%] p-2 rounded-lg text-sm ${
-                        message.senderType === "HOSTEL_OWNER"
+                        message.senderType === "HOSTEL_OWNER" &&
+                        message.senderId === currentUser.user.id
                           ? "bg-blue-500 text-white rounded-br-none"
                           : "bg-gray-200 text-gray-800 rounded-bl-none"
                       }`}
                     >
                       {message.content}
+                      <div className="text-xs mt-1 text-right">
+                        {new Date(message.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
                     </div>
                   </div>
                 ))}

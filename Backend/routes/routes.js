@@ -7,6 +7,7 @@ const favoriteRoute = require("./userRoute/favoriteRoute");
 const bookingRoutes = require("./userRoute/bookingRoute");
 const hostelContent = require("./adminRoute/hostelContentRoute");
 const membershipRoute = require("./adminRoute/membershipRoute");
+const paymentRoute = require("./adminRoute/paymentRoute");
 
 const setupRoutes = (app) => {
   app.use("/api/auth", authRoutes);
@@ -17,6 +18,7 @@ const setupRoutes = (app) => {
   app.use("/api/content", authMiddleware, hostelContent);
   app.use("/api/membership", authMiddleware, membershipRoute);
   app.use("/api/chat", authMiddleware, chatRoutes);
+  app.use("/api/payment", authMiddleware, paymentRoute);
 };
 
 module.exports = setupRoutes;

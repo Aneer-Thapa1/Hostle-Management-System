@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useQuery } from "react-query";
 import axios from "axios";
 import {
@@ -12,7 +12,7 @@ import {
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
-const fetchPackages = async () => {
+const fetchPackages = async (hostelId) => {
   const token = localStorage.getItem("token");
 
   if (!token) {
@@ -20,22 +20,31 @@ const fetchPackages = async () => {
   }
 
   const response = await axios.get(`${apiUrl}/api/content/packages`, {
+    params: { id: hostelId },
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
+
   return response.data;
 };
 
-const PackageSummary = () => {
+const PackageSummary = ({ hostelId }) => {
   const {
     data: deals,
     isLoading,
     error,
-  } = useQuery("packages", fetchPackages, {
-    refetchOnWindowFocus: false,
+    refetch,
+  } = useQuery(["packages", hostelId], () => fetchPackages(hostelId), {
+    enabled: !!hostelId, // Only run the query when hostelId is available
     retry: 1,
   });
+
+  useEffect(() => {
+    if (hostelId) {
+      refetch(); // Manually refetch when hostelId changes
+    }
+  }, [hostelId, refetch]);
 
   const getDiscountColor = (discount) => {
     if (discount >= 50) return "text-red-500";

@@ -167,15 +167,6 @@ module.exports = {
     const userId = req.user.user.id;
     const userRole = req.user.user.role;
 
-    console.log(
-      "Fetching messages for Conversation:",
-      conversationId,
-      "User:",
-      userId,
-      "Role:",
-      userRole
-    );
-
     if (!conversationId) {
       return res.status(400).json({ error: "Missing conversationId" });
     }
@@ -223,15 +214,6 @@ module.exports = {
     const { conversationId, content } = req.body;
     const senderId = req.user.user.id;
     const senderRole = req.user.user.role;
-
-    console.log(
-      "Sending message. User:",
-      senderId,
-      "Role:",
-      senderRole,
-      "Conversation:",
-      conversationId
-    );
 
     if (!conversationId || !content) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -291,15 +273,6 @@ module.exports = {
     const { messageId } = req.body;
     const userId = req.user.user.id;
     const userRole = req.user.user.role;
-
-    console.log(
-      "Marking message as read. User:",
-      userId,
-      "Role:",
-      userRole,
-      "Message:",
-      messageId
-    );
 
     if (!messageId) {
       return res.status(400).json({ error: "Missing messageId" });
