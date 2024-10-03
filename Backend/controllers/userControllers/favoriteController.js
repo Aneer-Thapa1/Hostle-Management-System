@@ -3,14 +3,6 @@ const prisma = new PrismaClient();
 
 const getFavorites = async (req, res) => {
   try {
-    // Check if req.user exists
-    if (!req.user) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized: User not authenticated" });
-    }
-
-    console.log("userid", req.user.user.id);
     const userId = req.user.user.id;
 
     // Check if userId is defined

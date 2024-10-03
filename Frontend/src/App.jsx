@@ -15,6 +15,8 @@ import Home from "./User/pages/Home";
 import Hostels from "./User/pages/Hostels";
 import UserChatInterface from "./User/pages/UserChatInterface";
 import { SocketContextProvider } from "./features/SocketContext";
+import BookingHistory from "./User/pages/BookingHistory";
+import Favorites from "./User/pages/Favrouites";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,8 @@ const App = () => {
             <Route path="/hostels" element={<Hostels />} />
             <Route path="/hostel/:id" element={<Hostel />} />
             <Route path="/messages" element={<UserChatInterface />} />
+            <Route path="/my-bookings" element={<BookingHistory />} />
+            <Route path="/favorites" element={<Favorites />} />
           </Routes>
         </BrowserRouter>
       </SocketContextProvider>

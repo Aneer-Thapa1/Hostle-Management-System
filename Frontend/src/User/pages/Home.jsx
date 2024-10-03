@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "react-query";
+import axios from "axios";
 import {
   FaSearch,
   FaRegCalendar,
@@ -12,43 +15,29 @@ import {
   FaLock,
   FaHeart,
   FaStar,
+  FaSpinner,
 } from "react-icons/fa";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
+
+const fetchFeaturedHostels = async () => {
+  const response = await axios.get(`${API_BASE_URL}/api/hostels/featured`);
+  return response.data;
+};
+
 const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [checkInDate, setCheckInDate] = useState("");
+  const navigate = useNavigate();
 
-  const featuredHostels = [
-    {
-      id: 1,
-      name: "Green Tortoise Hostel",
-      location: "San Francisco, USA",
-      price: 25,
-      rating: 4.8,
-      image:
-        "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-    },
-    {
-      id: 2,
-      name: "Generator Hostel",
-      location: "London, UK",
-      price: 20,
-      rating: 4.6,
-      image:
-        "https://images.unsplash.com/photo-1596436889106-be35e843f974?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-    },
-    {
-      id: 3,
-      name: "Zostel",
-      location: "Goa, India",
-      price: 8,
-      rating: 4.7,
-      image:
-        "https://images.unsplash.com/photo-1605796348246-9ab5be1202a8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-    },
-  ];
+  const {
+    data: featuredHostels,
+    isLoading,
+    error,
+  } = useQuery("featuredHostels", fetchFeaturedHostels);
 
   const hostelReviews = [
     {
@@ -73,6 +62,14 @@ const Home = () => {
       avatar: "https://randomuser.me/api/portraits/men/22.jpg",
     },
   ];
+
+  const handleSearch = () => {
+    navigate(`/hostels?search=${searchQuery}&checkIn=${checkInDate}`);
+  };
+
+  const handleBookNow = () => {
+    navigate("/hostels");
+  };
 
   return (
     <div className="bg-gray-900 min-h-screen text-white">
@@ -116,7 +113,10 @@ const Home = () => {
                   />
                 </div>
               </div>
-              <button className="bg-primaryColor text-white px-6 py-3 rounded-lg hover:bg-primaryColor-dark transition duration-300 transform hover:scale-105">
+              <button
+                className="bg-primaryColor text-white px-6 py-3 rounded-lg hover:bg-primaryColor-dark transition duration-300 transform hover:scale-105"
+                onClick={handleSearch}
+              >
                 Find Hostels
               </button>
             </div>
@@ -127,11 +127,21 @@ const Home = () => {
           <h2 className="text-3xl font-bold mb-8 text-center">
             Top-Rated Hostels
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredHostels.map((hostel) => (
-              <HostelCard key={hostel.id} hostel={hostel} />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center">
+              <FaSpinner className="animate-spin text-4xl text-primaryColor" />
+            </div>
+          ) : error ? (
+            <div className="text-center text-red-500">
+              Error loading featured hostels. Please try again later.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredHostels.slice(0, 3).map((hostel) => (
+                <HostelCard key={hostel.id} hostel={hostel} />
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="mb-16 bg-gradient-to-r from-gray-800 to-gray-700 rounded-lg p-8 shadow-xl">
@@ -185,7 +195,10 @@ const Home = () => {
             Join our community of backpackers and start creating unforgettable
             memories!
           </p>
-          <button className="bg-white text-primaryColor px-8 py-3 rounded-lg hover:bg-gray-100 transition duration-300 text-lg font-semibold transform hover:scale-105">
+          <button
+            className="bg-white text-primaryColor px-8 py-3 rounded-lg hover:bg-gray-100 transition duration-300 text-lg font-semibold transform hover:scale-105"
+            onClick={handleBookNow}
+          >
             Book Your Bed Now
           </button>
         </section>
@@ -227,8 +240,8 @@ const HostelCard = ({ hostel }) => {
     <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl">
       <div className="relative">
         <img
-          src={hostel.image}
-          alt={hostel.name}
+          src={hostel.mainPhoto || "https://via.placeholder.com/300x200"}
+          alt={hostel.hostelName}
           className="w-full h-48 object-cover"
         />
         <button
@@ -243,14 +256,14 @@ const HostelCard = ({ hostel }) => {
         </button>
       </div>
       <div className="p-4">
-        <h3 className="text-xl font-semibold mb-2">{hostel.name}</h3>
+        <h3 className="text-xl font-semibold mb-2">{hostel.hostelName}</h3>
         <p className="text-gray-400 text-sm mb-2 flex items-center">
           <FaMapMarkedAlt className="mr-1" />
           {hostel.location}
         </p>
         <div className="flex justify-between items-center mb-2">
           <span className="text-2xl font-bold text-primaryColor">
-            ${hostel.price}
+            ${hostel.lowestPrice}
           </span>
           <span className="text-sm text-gray-400">per night</span>
         </div>
@@ -260,14 +273,16 @@ const HostelCard = ({ hostel }) => {
               <FaStar
                 key={i}
                 className={`w-4 h-4 ${
-                  i < Math.floor(hostel.rating)
+                  i < Math.floor(hostel.avgRating)
                     ? "text-yellow-500"
                     : "text-gray-600"
                 }`}
               />
             ))}
           </div>
-          <span className="text-sm text-gray-400">{hostel.rating}</span>
+          <span className="text-sm text-gray-400">
+            {hostel.avgRating.toFixed(1)}
+          </span>
         </div>
       </div>
       <div className="px-4 py-3 bg-gray-700">
