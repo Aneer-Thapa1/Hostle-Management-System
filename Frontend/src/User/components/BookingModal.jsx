@@ -10,10 +10,10 @@ const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 const fetchPackages = async (hostelId) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("No authentication token found");
-
+  console.log(hostelId);
   const response = await axios.get(`${apiUrl}/api/content/packages`, {
     headers: { Authorization: `Bearer ${token}` },
-    params: { hostelId },
+    params: { id: hostelId },
   });
   console.log(response);
   return response.data;
@@ -21,7 +21,6 @@ const fetchPackages = async (hostelId) => {
 
 const BookingModal = ({ onClose, onSubmit }) => {
   const { id: hostelId } = useParams();
-  console.log(hostelId);
   const [bookingInfo, setBookingInfo] = useState({
     packageId: "",
     hostelId: hostelId,
@@ -31,8 +30,6 @@ const BookingModal = ({ onClose, onSubmit }) => {
     specialRequests: "",
     agreedToTerms: false,
   });
-
-  console.log(bookingInfo);
 
   const [showPackageInfo, setShowPackageInfo] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);

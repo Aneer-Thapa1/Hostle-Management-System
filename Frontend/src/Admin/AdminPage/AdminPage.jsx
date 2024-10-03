@@ -1,14 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import hms from "../../assets/Admin/hms.png";
-import { IoHomeOutline } from "react-icons/io5";
-import { FaRegCalendarAlt } from "react-icons/fa";
-import { MdOutlineBedroomParent } from "react-icons/md";
-import { IoPricetagsOutline } from "react-icons/io5";
-import { RiCustomerService2Line } from "react-icons/ri";
-import { FiSettings, FiLogOut } from "react-icons/fi";
-import { GiMoneyStack } from "react-icons/gi";
-import { AiFillEye } from "react-icons/ai";
+import {
+  FaHome,
+  FaCalendarAlt,
+  FaBed,
+  FaUsers,
+  FaMoneyBillWave,
+  FaEye,
+  FaCog,
+  FaSignOutAlt,
+} from "react-icons/fa";
 
 import AdminDashboard from "../AdminComponent/AdminDashboard";
 import AdminBookings from "../AdminComponent/AdminBookings";
@@ -16,14 +19,16 @@ import AdminRooms from "../AdminComponent/AdminRoom";
 import AdminPayments from "../AdminComponent/AdminPayments";
 import AdminSettings from "../AdminComponent/AdminSettings";
 import AdminUserView from "../AdminComponent/AdminUserView";
-import AdminStudents from "../AdminComponent/AdminStudents.jsx";
-import AdminFloatingChatInterface from "../AdminComponent/AdminFloatingChatInterface.jsx";
+import AdminStudents from "../AdminComponent/AdminStudents";
+import AdminFloatingChatInterface from "../AdminComponent/AdminFloatingChatInterface";
 
 const AdminPage = () => {
   const [active, setActive] = useState("dashboard");
   const [openModel, setModel] = useState(false);
   const [editData, setEditData] = useState();
   const navigate = useNavigate();
+
+  const user = useSelector((state) => state.user.user);
 
   const handleClick = (act) => {
     setActive(act);
@@ -38,12 +43,12 @@ const AdminPage = () => {
   };
 
   const navItems = [
-    { id: "dashboard", icon: IoHomeOutline, label: "Dashboard" },
-    { id: "bookings", icon: FaRegCalendarAlt, label: "Bookings" },
-    { id: "rooms", icon: MdOutlineBedroomParent, label: "Rooms" },
-    { id: "students", icon: MdOutlineBedroomParent, label: "Students" },
-    { id: "payments", icon: GiMoneyStack, label: "Payments" },
-    { id: "user-view", icon: AiFillEye, label: "User View" },
+    { id: "dashboard", icon: FaHome, label: "Dashboard" },
+    { id: "bookings", icon: FaCalendarAlt, label: "Bookings" },
+    { id: "rooms", icon: FaBed, label: "Rooms" },
+    { id: "students", icon: FaUsers, label: "Students" },
+    { id: "payments", icon: FaMoneyBillWave, label: "Payments" },
+    { id: "user-view", icon: FaEye, label: "User View" },
   ];
 
   const renderComponent = () => {
@@ -56,11 +61,11 @@ const AdminPage = () => {
         return <AdminRooms setModel={setModel} setEditData={setEditData} />;
       case "payments":
         return <AdminPayments />;
-
       case "user-view":
         return <AdminUserView />;
       case "students":
         return <AdminStudents />;
+
       default:
         return <AdminDashboard />;
     }
@@ -73,7 +78,7 @@ const AdminPage = () => {
         <div className="w-full flex items-center my-2 mb-6 gap-2">
           <img className="w-14 h-14 object-cover" src={hms} alt="Hostel Logo" />
           <h1 className="uppercase text-blue-500 font-semibold text-xl">
-            Hostel Name
+            {user.hostelName || "Hostel Name"}
           </h1>
         </div>
         <div className="w-full flex-grow flex flex-col gap-4 overflow-y-auto">
@@ -97,7 +102,7 @@ const AdminPage = () => {
           onClick={handleLogout}
           className="w-full flex gap-2 cursor-pointer hover:bg-red-200 hover:text-red-600 font-medium py-[6px] px-3 rounded-sm transition-all duration-300 group mt-auto mb-4"
         >
-          <FiLogOut className="w-6 h-6" />
+          <FaSignOutAlt className="w-6 h-6" />
           <h1>Logout</h1>
         </div>
       </div>
@@ -109,10 +114,10 @@ const AdminPage = () => {
             {active.charAt(0).toUpperCase() + active.slice(1)}
           </h2>
           <div className="flex items-center gap-4">
-            <span className="text-gray-600">Admin Name</span>
+            <span className="text-gray-600">{user.name}</span>
             <img
               className="w-10 h-10 rounded-full"
-              src="https://via.placeholder.com/40"
+              src={user.profileImage || "https://via.placeholder.com/40"}
               alt="Admin Avatar"
             />
           </div>

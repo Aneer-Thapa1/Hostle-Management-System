@@ -1,320 +1,311 @@
-import React, { useEffect, useState } from "react";
-import { CiMenuKebab } from "react-icons/ci";
+import React from "react";
+import { useQuery } from "react-query";
+import axios from "axios";
+import {
+  FaSpinner,
+  FaBed,
+  FaUsers,
+  FaMoneyBillWave,
+  FaStar,
+  FaChartLine,
+  FaPercent,
+  FaBoxOpen,
+} from "react-icons/fa";
+import { Line, Doughnut, Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Filler,
+  BarElement,
+} from "chart.js";
+
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Filler,
+  BarElement
+);
+
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
+
+const fetchDashboardData = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No authentication token found");
+  }
+
+  const response = await axios.get(`${API_BASE_URL}/api/admin/dashboard`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
 
 const AdminDashboard = () => {
-  const [fullDate, setFullDate] = useState();
+  const { data, isLoading, error } = useQuery(
+    "enhancedDashboardData",
+    fetchDashboardData
+  );
 
-  // Function to convert a number to a day name
-  const convertDay = (num) => {
-    switch (num) {
-      case 0:
-        return "Sunday";
-      case 1:
-        return "Monday";
-      case 2:
-        return "Tuesday";
-      case 3:
-        return "Wednesday";
-      case 4:
-        return "Thursday";
-      case 5:
-        return "Friday";
-      case 6:
-        return "Saturday";
-      default:
-        return "Invalid day";
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <FaSpinner className="animate-spin text-blue-500 text-4xl" />
+      </div>
+    );
+  }
 
-  // Function to convert a number to a month name
-  const convertMonth = (num) => {
-    switch (num) {
-      case 0:
-        return "January";
-      case 1:
-        return "February";
-      case 2:
-        return "March";
-      case 3:
-        return "April";
-      case 4:
-        return "May";
-      case 5:
-        return "June";
-      case 6:
-        return "July";
-      case 7:
-        return "August";
-      case 8:
-        return "September";
-      case 9:
-        return "October";
-      case 10:
-        return "November";
-      case 11:
-        return "December";
-      default:
-        return "Invalid month";
-    }
-  };
-
-  useEffect(() => {
-    const todayDate = new Date();
-    const year = todayDate.getFullYear();
-    const day = convertDay(todayDate.getDay());
-    const month = convertMonth(todayDate.getMonth());
-    const date = todayDate.getDate();
-
-    const full = `${day}, ${month} ${date}, ${year}`;
-    setFullDate(full);
-  }, []);
+  if (error) {
+    return (
+      <div className="text-red-500 text-center p-4">Error: {error.message}</div>
+    );
+  }
 
   return (
-    <div className={`w-full flex flex-col gap-3 `}>
-      <div className="flex w-full justify-end">
-        <div className="w-[65%] flex justify-between bg-white items-center py-2">
-          <h1 className="font-medium text-[#636363]">{fullDate}</h1>
-          <button className="bg-blue-500 text-white font-medium rounded-sm px-3 py-2 active:scale-95 transition-all ease-in-out">
-            Create Booking
-          </button>
-        </div>
+    <div className="p-6 bg-gray-100 min-h-screen">
+      <h1 className="text-3xl font-bold mb-8 text-gray-800">
+        Hostel Dashboard
+      </h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <DashboardCard
+          title="Total Occupancy"
+          value={`${data.overview.totalOccupancy}/${data.overview.totalCapacity}`}
+          icon={FaBed}
+          color="bg-blue-500"
+        />
+        <DashboardCard
+          title="Total Bookings"
+          value={data.overview.totalBookings}
+          icon={FaUsers}
+          color="bg-green-500"
+        />
+        <DashboardCard
+          title="Total Revenue"
+          value={`$${data.overview.totalRevenue.toFixed(2)}`}
+          icon={FaMoneyBillWave}
+          color="bg-yellow-500"
+        />
+        <DashboardCard
+          title="Average Rating"
+          value={data.overview.averageRating.toFixed(1)}
+          icon={FaStar}
+          color="bg-purple-500"
+        />
       </div>
 
-      <div className="w-full bg-[#eef0f2] flex flex-col p-4 rounded-md gap-6 pb-5">
-        {/* OVERVIEW */}
-        <div className="w-full flex flex-col gap-3 bg-white rounded-[4px] p-4">
-          <h1 className="font-semibold text-[18px] text-[#2c2c2c]">Overview</h1>
-          <div className="w-full grid grid-cols-5 gap-3 ">
-            {/* CHECKIN */}
-            <div className="flex gap-4">
-              <h1 className="flex flex-col gap-1 py-[1px]">
-                <span className="font-normal text-[16px] text-[#636363]">
-                  Today's
-                </span>{" "}
-                <span className="font-medium text-[18px] text-[#5f5f5f]">
-                  Check-in
-                </span>
-              </h1>
-              <div className="text-[25px] text-blue-600 font-semibold flex items-center pt-5 justify-end">
-                <p>23</p>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <ChartCard title="Revenue Trend" icon={FaChartLine}>
+          <RevenueTrendChart data={data.revenue.trend} />
+        </ChartCard>
+        <ChartCard title="Occupancy Trend" icon={FaPercent}>
+          <OccupancyTrendChart data={data.occupancy.trend} />
+        </ChartCard>
+      </div>
 
-            {/* CHECKOUT */}
-            <div className="flex gap-4">
-              <h1 className="flex flex-col gap-1 py-[1px]">
-                <span className="font-normal text-[16px] text-[#636363]">
-                  Today's
-                </span>{" "}
-                <span className="font-medium text-[18px] text-[#5f5f5f]">
-                  Check-out
-                </span>
-              </h1>
-              <div className="text-[25px] text-blue-600 font-semibold flex items-center pt-5 justify-end">
-                <p>13</p>
-              </div>
-            </div>
-
-            {/* INHOTEL */}
-            <div className="flex gap-4">
-              <h1 className="flex flex-col gap-1 py-[1px]">
-                <span className="font-normal text-[16px] text-[#636363]">
-                  Today's
-                </span>{" "}
-                <span className="font-medium text-[18px] text-[#5f5f5f]">
-                  in hotel
-                </span>
-              </h1>
-              <div className="text-[25px] text-blue-600 font-semibold flex items-center pt-5 justify-end">
-                <p>60</p>
-              </div>
-            </div>
-
-            {/* AVAILABLE ROOM */}
-            <div className="flex gap-4">
-              <h1 className="flex flex-col gap-1 py-[1px]">
-                <span className="font-normal text-[16px] text-[#636363]">
-                  Today's
-                </span>{" "}
-                <span className="font-medium text-[18px] text-[#5f5f5f]">
-                  Available room
-                </span>
-              </h1>
-              <div className="text-[25px] text-blue-600 font-semibold flex items-center pt-5 justify-end">
-                <p>10</p>
-              </div>
-            </div>
-
-            {/* Occupied Room */}
-            <div className="flex gap-4">
-              <h1 className="flex flex-col gap-1 py-[1px]">
-                <span className="font-normal text-[16px] text-[#636363]">
-                  Today's
-                </span>{" "}
-                <span className="font-medium text-[18px] text-[#5f5f5f]">
-                  Occupied room
-                </span>
-              </h1>
-              <div className="text-[25px] text-blue-600 font-semibold flex items-center pt-5 justify-end">
-                <p>90</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* ROOMS */}
-        <div className="w-full flex flex-col gap-3 bg-white rounded-[4px] p-4">
-          <h1 className="font-semibold text-[18px] text-[#2c2c2c]">Rooms</h1>
-          <div className="w-full grid grid-cols-4 gap-3 ">
-            {/* SINGLE SHARING */}
-            <div className="flex flex-col gap-2 border-[1px] rounded-md p-3">
-              <div className="flex w-full justify-between items-center">
-                <div className="bg-green-200 rounded-md text-green-800 font-medium px-3 py-1 text-sm">
-                  2 Deals
-                </div>
-                <CiMenuKebab />
-              </div>
-              <div className="w-full flex flex-col gap-1">
-                <h1 className="font-semibold text-[#636363]">Single Sharing</h1>
-                <p className="font-medium text-[#636363] text-lg">
-                  <span className="text-[22px] text-[#5d5d5d] font-semibold">
-                    2
-                  </span>
-                  <span>/30</span>
-                </p>
-                <p className="font-medium text-[#636363] text-lg">
-                  <span className="text-[20px] text-blue-600 font-semibold">
-                    $ 568
-                  </span>
-                  <span>/ day</span>
-                </p>
-              </div>
-            </div>
-
-            {/* DOUBLE SHARING */}
-            <div className="flex flex-col gap-2 border-[1px] rounded-md p-3">
-              <div className="flex w-full justify-between items-center">
-                <div className="bg-green-200 rounded-md text-green-800 font-medium px-3 py-1 text-sm">
-                  2 Deals
-                </div>
-                <CiMenuKebab />
-              </div>
-              <div className="w-full flex flex-col gap-1">
-                <h1 className="font-semibold text-[#636363]">Double Sharing</h1>
-                <p className="font-medium text-[#636363] text-lg">
-                  <span className="text-[22px] text-[#5d5d5d] font-semibold">
-                    2
-                  </span>
-                  <span>/30</span>
-                </p>
-                <p className="font-medium text-[#636363] text-lg">
-                  <span className="text-[20px] text-blue-600 font-semibold">
-                    $ 1,068
-                  </span>
-                  <span>/ day</span>
-                </p>
-              </div>
-            </div>
-
-            {/* TRIPLE SHARING */}
-            <div className="flex flex-col gap-2 border-[1px] rounded-md p-3">
-              <div className="flex w-full justify-between items-center">
-                <div className="bg-green-200 rounded-md text-green-800 font-medium px-3 py-1 text-sm">
-                  {/* 2 Deals */}
-                </div>
-                <CiMenuKebab />
-              </div>
-              <div className="w-full flex flex-col gap-1">
-                <h1 className="font-semibold text-[#636363]">Triple Sharing</h1>
-                <p className="font-medium text-[#636363] text-lg">
-                  <span className="text-[22px] text-[#5d5d5d] font-semibold">
-                    2
-                  </span>
-                  <span>/30</span>
-                </p>
-                <p className="font-medium text-[#636363] text-lg">
-                  <span className="text-[20px] text-blue-600 font-semibold">
-                    $ 1,568
-                  </span>
-                  <span>/ day</span>
-                </p>
-              </div>
-            </div>
-
-            {/* VIP */}
-            <div className="flex flex-col gap-2 border-[1px] rounded-md p-3">
-              <div className="flex w-full justify-between items-center ">
-                <div className="bg-green-200 rounded-md text-green-800 font-medium px-3 py-1 text-sm">
-                  {/* 2 Deals */}
-                </div>
-                <CiMenuKebab />
-              </div>
-              <div className="w-full flex flex-col gap-1">
-                <h1 className="font-semibold text-[#636363]">VIP Suit</h1>
-                <p className="font-medium text-[#636363] text-lg">
-                  <span className="text-[22px] text-[#5d5d5d] font-semibold">
-                    2
-                  </span>
-                  <span>/30</span>
-                </p>
-                <p className="font-medium text-[#636363] text-lg">
-                  <span className="text-[20px] text-blue-600 font-semibold">
-                    $ 2,568
-                  </span>
-                  <span>/ day</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Room statue and Floor */}
-        <div className="w-full flex gap-5">
-          {/* Room status */}
-          <div className="ROOM STATUS w-[60%] flex flex-col gap-2 bg-white p-4 rounded-[4px]">
-            <h1 className="font-semibold text-[18px] text-[#2c2c2c]">
-              Room status
-            </h1>
-            <div className="w-full flex gap-20 ">
-              {/* Occupied Room */}
-              <div className="w-full flex flex-col gap-1">
-                <h1 className="text-[#636363] font-[550] w-full flex justify-between">
-                  <span>Occupied rooms</span> <span>108</span>
-                </h1>
-                <p className="text-[#636363] w-full flex justify-between">
-                  <span>Clean</span> <span>90</span>
-                </p>
-                <p className="text-[#636363] w-full flex justify-between">
-                  <span>Dirty</span> <span>4</span>
-                </p>
-                <p className="text-[#636363] w-full flex justify-between">
-                  <span>Inspected</span> <span>60</span>
-                </p>
-              </div>
-              <div className="w-full flex flex-col gap-1">
-                <h1 className="text-[#636363] font-[550] w-full flex justify-between">
-                  <span>Available rooms</span> <span>20</span>
-                </h1>
-                <p className="text-[#636363] w-full flex justify-between">
-                  <span>Clean</span> <span>30</span>
-                </p>
-                <p className="text-[#636363] w-full flex justify-between">
-                  <span>Dirty</span> <span>19</span>
-                </p>
-                <p className="text-[#636363] w-full flex justify-between">
-                  <span>Inspected</span> <span>30</span>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="w-[40%] bg-white flex flex-col gap-2 p-4">
-            <h1 className="font-semibold text-[18px] text-[#2c2c2c]">
-              Floor status
-            </h1>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <ChartCard title="Room Type Occupancy" icon={FaBed}>
+          <RoomTypeOccupancyChart data={data.occupancy.byRoomType} />
+        </ChartCard>
+        <ChartCard title="Top Packages" icon={FaBoxOpen}>
+          <TopPackagesChart data={data.topPackages} />
+        </ChartCard>
+        <ChartCard title="Booking Status" icon={FaUsers}>
+          <BookingStatusChart data={data.bookings.byStatus} />
+        </ChartCard>
       </div>
     </div>
   );
+};
+
+const DashboardCard = ({ title, value, icon: Icon, color }) => (
+  <div
+    className={`${color} p-6 rounded-lg shadow-lg text-white transform transition-all duration-300 hover:scale-105`}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <p className="text-3xl font-bold mt-2">{value}</p>
+      </div>
+      <Icon className="text-5xl opacity-50" />
+    </div>
+  </div>
+);
+
+const ChartCard = ({ title, children, icon: Icon }) => (
+  <div className="bg-white p-6 rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105">
+    <h2 className="text-xl font-semibold mb-4 flex items-center">
+      <Icon className="mr-2 text-blue-500" />
+      {title}
+    </h2>
+    {children}
+  </div>
+);
+
+const RevenueTrendChart = ({ data }) => {
+  const chartData = {
+    labels: data.map((item) => new Date(item.date).toLocaleDateString()),
+    datasets: [
+      {
+        label: "Revenue",
+        data: data.map((item) => item.total),
+        fill: true,
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
+        borderColor: "rgba(75, 192, 192, 1)",
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { position: "top" },
+      title: { display: true, text: "Daily Revenue" },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: "Revenue ($)" },
+      },
+    },
+  };
+
+  return <Line data={chartData} options={options} />;
+};
+
+const OccupancyTrendChart = ({ data }) => {
+  const chartData = {
+    labels: data.map((item) => new Date(item.date).toLocaleDateString()),
+    datasets: [
+      {
+        label: "Occupancy",
+        data: data.map((item) => item.count),
+        fill: true,
+        backgroundColor: "rgba(255, 99, 132, 0.2)",
+        borderColor: "rgba(255, 99, 132, 1)",
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { position: "top" },
+      title: { display: true, text: "Daily Occupancy" },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: "Number of Guests" },
+      },
+    },
+  };
+
+  return <Line data={chartData} options={options} />;
+};
+
+const RoomTypeOccupancyChart = ({ data }) => {
+  const chartData = {
+    labels: data.map((item) => item.type),
+    datasets: [
+      {
+        label: "Occupied",
+        data: data.map((item) => item.occupied),
+        backgroundColor: "rgba(75, 192, 192, 0.8)",
+      },
+      {
+        label: "Available",
+        data: data.map((item) => item.total - item.occupied),
+        backgroundColor: "rgba(255, 99, 132, 0.8)",
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { position: "top" },
+      title: { display: true, text: "Room Type Occupancy" },
+    },
+    scales: {
+      x: { stacked: true },
+      y: { stacked: true, beginAtZero: true },
+    },
+  };
+
+  return <Bar data={chartData} options={options} />;
+};
+
+const TopPackagesChart = ({ data }) => {
+  const chartData = {
+    labels: data.map((pkg) => pkg.packageName),
+    datasets: [
+      {
+        data: data.map((pkg) => pkg.bookings),
+        backgroundColor: [
+          "rgba(255, 99, 132, 0.8)",
+          "rgba(54, 162, 235, 0.8)",
+          "rgba(255, 206, 86, 0.8)",
+          "rgba(75, 192, 192, 0.8)",
+          "rgba(153, 102, 255, 0.8)",
+        ],
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { position: "right" },
+      title: { display: true, text: "Top Packages" },
+    },
+  };
+
+  return <Doughnut data={chartData} options={options} />;
+};
+
+const BookingStatusChart = ({ data }) => {
+  const chartData = {
+    labels: data.map((item) => item.status),
+    datasets: [
+      {
+        data: data.map((item) => item.count),
+        backgroundColor: [
+          "rgba(75, 192, 192, 0.8)",
+          "rgba(255, 206, 86, 0.8)",
+          "rgba(255, 99, 132, 0.8)",
+          "rgba(54, 162, 235, 0.8)",
+        ],
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { position: "right" },
+      title: { display: true, text: "Booking Status" },
+    },
+  };
+
+  return <Doughnut data={chartData} options={options} />;
 };
 
 export default AdminDashboard;

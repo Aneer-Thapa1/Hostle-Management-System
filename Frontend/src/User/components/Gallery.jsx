@@ -13,28 +13,31 @@ import { useSwipeable } from "react-swipeable";
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
-const fetchGalleryImages = async () => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
-
-  const response = await axios.get(`${apiUrl}/api/content/gallery`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
-
-const Gallery = () => {
+const Gallery = ({ hostelId }) => {
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
+
+  const fetchGalleryImages = useCallback(async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    const response = await axios.get(`${apiUrl}/api/content/gallery`, {
+      params: { id: hostelId },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  }, [hostelId]);
+
   const {
     data: images,
     isLoading,
     error,
-  } = useQuery("galleryImages", fetchGalleryImages, {
+  } = useQuery(["galleryImages", hostelId], fetchGalleryImages, {
+    enabled: !!hostelId,
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -48,7 +51,11 @@ const Gallery = () => {
   }, []);
 
   const nextImage = useCallback(() => {
-    if (fullscreenIndex !== null && fullscreenIndex < images.length - 1) {
+    if (
+      fullscreenIndex !== null &&
+      images &&
+      fullscreenIndex < images.length - 1
+    ) {
       setFullscreenIndex(fullscreenIndex + 1);
     }
   }, [fullscreenIndex, images]);
@@ -152,7 +159,7 @@ const Gallery = () => {
         )}
       </div>
 
-      {fullscreenIndex !== null && (
+      {fullscreenIndex !== null && images && (
         <div
           className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
           {...handlers}

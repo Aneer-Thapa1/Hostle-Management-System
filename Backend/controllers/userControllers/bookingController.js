@@ -135,6 +135,20 @@ const acceptBooking = async (req, res) => {
         throw new Error("Not enough space in the selected room");
       }
 
+      // Check for existing active membership
+      const existingMembership = await prisma.hostelMembership.findFirst({
+        where: {
+          userId: booking.userId,
+          hostelId: booking.hostelId,
+          packageId: booking.packageId,
+          status: "ACTIVE",
+        },
+      });
+
+      if (existingMembership) {
+        return { status: "MEMBERSHIP_EXISTS", existingMembership };
+      }
+
       const updatedBooking = await prisma.booking.update({
         where: { id: booking.id },
         data: {
@@ -157,7 +171,7 @@ const acceptBooking = async (req, res) => {
         },
       });
 
-      const membership = await prisma.hostelMembership.create({
+      const newMembership = await prisma.hostelMembership.create({
         data: {
           userId: booking.userId,
           hostelId: booking.hostelId,
@@ -169,14 +183,22 @@ const acceptBooking = async (req, res) => {
         },
       });
 
-      return { updatedBooking, membership };
+      return { status: "SUCCESS", updatedBooking, newMembership };
     });
+
+    if (result.status === "MEMBERSHIP_EXISTS") {
+      return res.status(409).json({
+        message:
+          "User already has an active membership for this hostel and package",
+        existingMembership: result.existingMembership,
+      });
+    }
 
     res.status(200).json({
       message:
         "Booking accepted, room assigned, and membership created successfully",
       booking: result.updatedBooking,
-      membership: result.membership,
+      membership: result.newMembership,
     });
   } catch (error) {
     console.error("Error accepting booking:", error);
@@ -217,12 +239,6 @@ const declineBooking = async (req, res) => {
 
 const getUserBookings = async (req, res) => {
   try {
-    if (!req.user) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized: User not authenticated" });
-    }
-
     const userId = req.user.user.id;
     const { status, startDate, endDate } = req.query;
 

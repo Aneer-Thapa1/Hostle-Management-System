@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const API_BASE_URL = "http://localhost:8870/api/payment";
 
@@ -40,27 +42,38 @@ const PaymentFormModal = ({
 
   useEffect(() => {
     if (editingPayment) {
-      setPayment(editingPayment);
+      setPayment({
+        ...editingPayment,
+        userId:
+          editingPayment.userId ||
+          students.find((s) => s.name === editingPayment.studentName)?.id ||
+          "",
+        amount: editingPayment.amount.toString(),
+        paymentDate: new Date(editingPayment.paymentDate)
+          .toISOString()
+          .split("T")[0],
+      });
+    } else {
+      setPayment({
+        userId: "",
+        amount: "",
+        paymentDate: "",
+        paymentMethod: "CREDIT_CARD",
+        status: "COMPLETED",
+      });
     }
-  }, [editingPayment]);
+  }, [editingPayment, students]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(payment);
-    setPayment({
-      userId: "",
-      amount: "",
-      paymentDate: "",
-      paymentMethod: "CREDIT_CARD",
-      status: "COMPLETED",
-    });
   };
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-96">
+      <div className="bg-white p-8 rounded-lg shadow-xl w-96 relative">
         <h2 className="text-2xl font-bold mb-4">
           {editingPayment ? "Edit Payment" : "Add New Payment"}
         </h2>
@@ -118,12 +131,21 @@ const PaymentFormModal = ({
             <option value="FAILED">Failed</option>
             <option value="REFUNDED">Refunded</option>
           </select>
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
-            {editingPayment ? "Update Payment" : "Add Payment"}
-          </button>
+          <div className="flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              {editingPayment ? "Update Payment" : "Add Payment"}
+            </button>
+          </div>
         </form>
         <button
           onClick={onClose}
@@ -142,43 +164,47 @@ const AdminPayments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
-  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [paymentsPerPage] = useState(10);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPayments();
-    fetchStudents();
-  }, []);
-
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
+      setLoading(true);
       const response = await axiosAuth.get("/payments");
       setPayments(response.data);
     } catch (error) {
       console.error("Error fetching payments:", error);
-      setError("Failed to fetch payments. Please try again.");
+      toast.error("Failed to fetch payments. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     try {
       const response = await axiosAuth.get("/students");
       setStudents(response.data);
     } catch (error) {
       console.error("Error fetching students:", error);
-      setError("Failed to fetch students. Please try again.");
+      toast.error("Failed to fetch students. Please try again.");
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchPayments();
+    fetchStudents();
+  }, [fetchPayments, fetchStudents]);
 
   const handleAddPayment = async (newPayment) => {
     try {
       const response = await axiosAuth.post("/payments", newPayment);
       setPayments([...payments, response.data]);
       setIsModalOpen(false);
+      toast.success("Payment added successfully");
     } catch (error) {
       console.error("Error adding payment:", error);
-      setError("Failed to add payment. Please try again.");
+      toast.error("Failed to add payment. Please try again.");
     }
   };
 
@@ -193,9 +219,10 @@ const AdminPayments = () => {
       );
       setIsModalOpen(false);
       setEditingPayment(null);
+      toast.success("Payment updated successfully");
     } catch (error) {
       console.error("Error updating payment:", error);
-      setError("Failed to update payment. Please try again.");
+      toast.error("Failed to update payment. Please try again.");
     }
   };
 
@@ -212,12 +239,14 @@ const AdminPayments = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
+  if (loading) {
+    return <div className="text-center mt-8">Loading...</div>;
   }
 
+  console.log(payments);
   return (
     <div className="container mx-auto px-4 py-8">
+      <ToastContainer />
       <h1 className="text-3xl font-bold mb-6">Payment Management</h1>
       <div className="mb-4 flex justify-between items-center">
         <div className="relative">

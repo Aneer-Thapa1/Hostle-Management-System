@@ -13,7 +13,7 @@ import {
 
 const apiUrl = import.meta.env.VITE_BACKEND_PATH || "http://localhost:3000";
 
-const fetchMeals = async () => {
+const fetchMeals = async (hostelId) => {
   const token = localStorage.getItem("token");
 
   if (!token) {
@@ -21,24 +21,23 @@ const fetchMeals = async () => {
   }
 
   const response = await axios.get(`${apiUrl}/api/content/meals`, {
+    params: { id: hostelId },
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-  console.log("API Response:", response.data); // Debug log
   return response.data;
 };
 
-const Meals = () => {
+const Meals = ({ hostelId }) => {
   const {
     data: meals,
     isLoading,
     error,
-  } = useQuery("meals", fetchMeals, {
+  } = useQuery(["meals", hostelId], () => fetchMeals(hostelId), {
+    enabled: !!hostelId,
     refetchOnWindowFocus: false,
     retry: 1,
-    onSuccess: (data) => console.log("Query Successful, Data:", data), // Debug log
-    onError: (error) => console.error("Query Error:", error), // Debug log
   });
 
   const MealItem = ({ meal }) => (

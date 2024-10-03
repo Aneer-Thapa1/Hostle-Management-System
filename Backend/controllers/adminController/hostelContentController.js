@@ -4,7 +4,13 @@ const prisma = new PrismaClient();
 const hostelContentController = {
   getHostelInfo: async (req, res) => {
     try {
-      const id = req.user.user.id;
+      let id;
+
+      if (req.user.user.role === "STUDENT") {
+        id = parseInt(req.query.id);
+      } else if (req.user.user.role === "HOSTEL_OWNER") {
+        id = req.user.user.id;
+      }
 
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
@@ -95,10 +101,12 @@ const hostelContentController = {
         id = req.user.user.id;
       }
 
+      console.log(id);
+
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
-      console.log(id);
+
       const packages = await prisma.package.findMany({
         where: { hostelOwnerId: id },
       });
@@ -210,16 +218,21 @@ const hostelContentController = {
 
   getFacilities: async (req, res) => {
     try {
-      const hostelId = req.user.user.id;
+      let id;
 
-      if (isNaN(hostelId)) {
+      if (req.user.user.role === "STUDENT") {
+        id = parseInt(req.query.id);
+      } else if (req.user.user.role === "HOSTEL_OWNER") {
+        id = req.user.user.id;
+      }
+
+      if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const facilities = await prisma.facility.findMany({
-        where: { hostelOwnerId: hostelId },
+        where: { hostelOwnerId: id },
       });
-      console.log(facilities);
       res.json(facilities);
     } catch (error) {
       console.error("Error fetching facilities:", error);
@@ -278,14 +291,20 @@ const hostelContentController = {
 
   getGalleryImages: async (req, res) => {
     try {
-      const hostelId = req.user.user.id;
+      let id;
 
-      if (isNaN(hostelId)) {
+      if (req.user.user.role === "STUDENT") {
+        id = parseInt(req.query.id);
+      } else if (req.user.user.role === "HOSTEL_OWNER") {
+        id = req.user.user.id;
+      }
+
+      if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const images = await prisma.galleryImage.findMany({
-        where: { hostelOwnerId: hostelId },
+        where: { hostelOwnerId: id },
       });
 
       res.json(images);
@@ -346,14 +365,20 @@ const hostelContentController = {
 
   getMeals: async (req, res) => {
     try {
-      const hostelId = req.user.user.id;
+      let id;
 
-      if (isNaN(hostelId)) {
+      if (req.user.user.role === "STUDENT") {
+        id = parseInt(req.query.id);
+      } else if (req.user.user.role === "HOSTEL_OWNER") {
+        id = req.user.user.id;
+      }
+
+      if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const meals = await prisma.meal.findMany({
-        where: { hostelOwnerId: hostelId },
+        where: { hostelOwnerId: id },
       });
 
       res.json(meals);
@@ -448,14 +473,20 @@ const hostelContentController = {
 
   getNearbyAttractions: async (req, res) => {
     try {
-      const hostelId = req.user.user.id;
+      let id;
 
-      if (isNaN(hostelId)) {
+      if (req.user.user.role === "STUDENT") {
+        id = parseInt(req.query.id);
+      } else if (req.user.user.role === "HOSTEL_OWNER") {
+        id = req.user.user.id;
+      }
+
+      if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const attractions = await prisma.nearbyAttraction.findMany({
-        where: { hostelOwnerId: hostelId },
+        where: { hostelOwnerId: id },
       });
 
       res.json(attractions);
@@ -542,17 +573,22 @@ const hostelContentController = {
     }
   },
 
-  // New function to get rooms
   getRooms: async (req, res) => {
     try {
-      const hostelId = req.user.user.id;
+      let id;
 
-      if (isNaN(hostelId)) {
+      if (req.user.user.role === "STUDENT") {
+        id = parseInt(req.query.id);
+      } else if (req.user.user.role === "HOSTEL_OWNER") {
+        id = req.user.user.id;
+      }
+
+      if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid hostel ID" });
       }
 
       const rooms = await prisma.room.findMany({
-        where: { hostelOwnerId: hostelId },
+        where: { hostelOwnerId: id },
       });
 
       res.json(rooms);
@@ -564,7 +600,6 @@ const hostelContentController = {
     }
   },
 
-  // New function to add a room
   addRoom: async (req, res) => {
     try {
       const hostelId = req.user.user.id;
@@ -610,7 +645,6 @@ const hostelContentController = {
     }
   },
 
-  // New function to update a room
   updateRoom: async (req, res) => {
     try {
       const roomId = parseInt(req.params.id, 10);
@@ -656,7 +690,6 @@ const hostelContentController = {
     }
   },
 
-  // New function to delete a room
   deleteRoom: async (req, res) => {
     try {
       const roomId = parseInt(req.params.id, 10);
